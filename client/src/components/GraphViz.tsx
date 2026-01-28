@@ -51,7 +51,14 @@ export function GraphViz({ data }: { data: GraphData }) {
           ref={fgRef}
           width={containerDimensions.width}
           height={containerDimensions.height}
-          graphData={data}
+          graphData={{
+            nodes: data.nodes || [],
+            links: data.edges?.map(e => ({
+              source: e.source,
+              target: e.target,
+              label: e.relation
+            })) || []
+          }}
           backgroundColor={isDark ? "#0f172a" : "#ffffff"}
           nodeLabel="label"
           nodeColor={(node: any) => node.color || "#3b82f6"}
