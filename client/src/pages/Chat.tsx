@@ -14,10 +14,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { useChat } from "@/hooks/use-chat";
 import { useDocuments, useUploadDocument } from "@/hooks/use-documents";
-import { useQuery } from "@tanstack/react-query";
-import { useParams } from "wouter";
 import { 
   Send, 
   Bot, 
@@ -31,8 +28,10 @@ import {
   ImageIcon,
   Loader2,
   X,
-  LayoutGrid
+  LayoutGrid,
+  Trash2
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 type Message = {
   role: 'user' | 'assistant';
@@ -40,40 +39,49 @@ type Message = {
   source?: string;
   reasoning?: string;
   confidence?: number;
-  attachments?: { name: string, type: string }[];
 };
 
+const CHAT_STORAGE_KEY = 'neographqa_chat_messages';
+
+function loadMessagesFromStorage(): Message[] {
+  try {
+    const stored = sessionStorage.getItem(CHAT_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error('Error loading chat from session storage:', e);
+  }
+  return [
+    { role: 'assistant', content: 'Hello! I am NeoGraphQA. I can answer questions from your documents using PDF analysis, Knowledge Graphs, or Image recognition. How can I help?' }
+  ];
+}
+
+function saveMessagesToStorage(messages: Message[]) {
+  try {
+    sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+  } catch (e) {
+    console.error('Error saving chat to session storage:', e);
+  }
+}
+
 export default function Chat() {
-  const params = useParams();
-  const initialConversationId = params.id ? parseInt(params.id) : null;
-  const [currentConversationId, setCurrentConversationId] = useState<number | null>(initialConversationId);
-
-  const { data: conversationData, isLoading: isLoadingConversation } = useQuery<any>({
-    queryKey: [`/api/conversations/${currentConversationId}`],
-    enabled: !!currentConversationId,
-  });
-
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => loadMessagesFromStorage());
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<'auto' | 'pdf' | 'kg' | 'image'>('auto');
   const [selectedDocId, setSelectedDocId] = useState<string>("all");
   const [showGallery, setShowGallery] = useState(false);
-
-  useEffect(() => {
-    if (conversationData?.messages) {
-      setMessages(conversationData.messages);
-    } else if (!currentConversationId) {
-      setMessages([
-        { role: 'assistant', content: 'Hello! I am NeoGraphQA. I can answer questions from your documents using PDF analysis, Knowledge Graphs, or Image recognition. How can I help?' }
-      ]);
-    }
-  }, [conversationData, currentConversationId]);
+  const [isLoading, setIsLoading] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: documents } = useDocuments();
-  const chatMutation = useChat();
   const uploadMutation = useUploadDocument();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    saveMessagesToStorage(messages);
+  }, [messages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -88,45 +96,69 @@ export default function Chat() {
 
     try {
       await uploadMutation.mutateAsync(formData);
-      // Logic for adding attachment preview to input could go here
     } catch (error) {
       // Toast already handled by hook
     }
   };
 
+  const clearChat = () => {
+    const initialMessage: Message[] = [
+      { role: 'assistant', content: 'Hello! I am NeoGraphQA. I can answer questions from your documents using PDF analysis, Knowledge Graphs, or Image recognition. How can I help?' }
+    ];
+    setMessages(initialMessage);
+    saveMessagesToStorage(initialMessage);
+    toast({ title: "Chat cleared", description: "Started a new conversation." });
+  };
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!input.trim() || chatMutation.isPending) return;
+    if (!input.trim() || isLoading) return;
 
     const userMessage = input;
     setInput("");
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    
+    const updatedMessages: Message[] = [...messages, { role: 'user', content: userMessage }];
+    setMessages(updatedMessages);
+    setIsLoading(true);
 
     try {
-      const response = await chatMutation.mutateAsync({
-        message: userMessage,
-        mode,
-        documentId: selectedDocId === "all" ? undefined : Number(selectedDocId),
-        conversationId: currentConversationId || undefined
+      const res = await fetch('/api/chat/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          message: userMessage,
+          mode,
+          documentId: selectedDocId === "all" ? undefined : Number(selectedDocId),
+          chatHistory: updatedMessages.slice(-20)
+        })
       });
 
-      // Track conversation ID for continuing the conversation
-      if (response.conversationId && !currentConversationId) {
-        setCurrentConversationId(response.conversationId);
+      if (!res.ok) {
+        throw new Error("Failed to get response");
       }
 
+      const data = await res.json();
+      
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: response.response,
-        source: response.source,
-        reasoning: response.reasoning,
-        confidence: response.confidence
+        content: data.response,
+        source: data.source,
+        reasoning: data.reasoning,
+        confidence: data.confidence
       }]);
     } catch (error) {
       setMessages(prev => [...prev, { 
         role: 'assistant', 
         content: "Sorry, I encountered an error processing your request." 
       }]);
+      toast({ 
+        title: "Error", 
+        description: "Failed to get a response. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -134,13 +166,22 @@ export default function Chat() {
     <div className="flex h-screen bg-background">
       <AppSidebar />
       <div className="flex-1 md:ml-72 flex flex-col h-full relative">
-        {/* Header */}
         <div className="h-16 border-b border-border flex items-center justify-between px-6 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <Bot className="w-5 h-5 text-primary" />
             <h2 className="font-semibold">Chat Assistant</h2>
           </div>
           <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={clearChat}
+              className="gap-2 text-xs text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="w-4 h-4" />
+              Clear
+            </Button>
+
             <Button 
               variant="ghost" 
               size="sm" 
@@ -180,7 +221,6 @@ export default function Chat() {
         </div>
 
         <div className="flex flex-1 overflow-hidden">
-          {/* Messages Area */}
           <div className="flex-1 flex flex-col h-full min-w-0">
             <ScrollArea className="flex-1 p-4 md:p-8">
               <div className="max-w-3xl mx-auto space-y-6">
@@ -234,7 +274,7 @@ export default function Chat() {
                     </div>
                   </motion.div>
                 ))}
-                {chatMutation.isPending && (
+                {isLoading && (
                   <div className="flex gap-4">
                     <div className="w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center shrink-0">
                       <Sparkles className="w-4 h-4" />
@@ -248,7 +288,6 @@ export default function Chat() {
               </div>
             </ScrollArea>
 
-            {/* Input Area */}
             <div className="p-4 md:p-6 bg-background border-t border-border">
               <div className="max-w-3xl mx-auto">
                 <form onSubmit={handleSubmit} className="relative group">
@@ -262,7 +301,7 @@ export default function Chat() {
                           handleSubmit();
                         }
                       }}
-                      placeholder="Type your message, upload files or images..."
+                      placeholder="Type your message..."
                       className="min-h-[100px] pr-12 resize-none py-4 px-4 rounded-2xl border-0 focus-visible:ring-0 text-sm"
                     />
                     
@@ -299,7 +338,7 @@ export default function Chat() {
                       <Button 
                         type="submit" 
                         size="icon" 
-                        disabled={!input.trim() || chatMutation.isPending}
+                        disabled={!input.trim() || isLoading}
                         className="h-8 w-8 bg-primary hover:bg-primary/90 transition-all shrink-0"
                       >
                         <Send className="w-4 h-4" />
@@ -314,7 +353,6 @@ export default function Chat() {
             </div>
           </div>
 
-          {/* Side Gallery */}
           <AnimatePresence>
             {showGallery && (
               <motion.div

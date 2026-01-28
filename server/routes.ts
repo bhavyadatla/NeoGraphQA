@@ -80,8 +80,65 @@ export async function registerRoutes(
         content,
         fileUrl: req.file.path, 
         fileType,
-        processingStatus: fileType === "image" ? "completed" : "pending"
+        processingStatus: fileType === "image" ? "completed" : "processing"
       });
+
+      // Auto-process non-image documents
+      if (fileType !== "image" && content) {
+        (async () => {
+          try {
+            // 1. Generate Summary
+            const summaryResponse = await openai.chat.completions.create({
+              model: "gpt-4o",
+              messages: [
+                { role: "system", content: "Summarize the following text concisely." },
+                { role: "user", content: content.substring(0, 10000) }
+              ]
+            });
+            const summary = summaryResponse.choices[0].message.content || "No summary generated.";
+            await storage.updateDocumentSummary(doc.id, summary);
+
+            // 2. Build Knowledge Graph
+            const kgResponse = await openai.chat.completions.create({
+              model: "gpt-4o",
+              messages: [
+                { role: "system", content: "Extract a comprehensive knowledge graph from the text. Identify key entities (nodes) and their relationships (edges). Return JSON: { nodes: [{label, type}], edges: [{source, target, relation}] }." },
+                { role: "user", content: content.substring(0, 8000) }
+              ],
+              response_format: { type: "json_object" }
+            });
+            
+            const kgData = JSON.parse(kgResponse.choices[0].message.content || "{}");
+            if (kgData.nodes && kgData.edges) {
+              const nodeMap = new Map<string, number>();
+              for (const n of kgData.nodes) {
+                const node = await storage.createKgNode({
+                  docId: doc.id,
+                  label: n.label,
+                  type: n.type || "Entity"
+                });
+                nodeMap.set(n.label, node.id);
+              }
+              for (const e of kgData.edges) {
+                const sourceId = nodeMap.get(e.source);
+                const targetId = nodeMap.get(e.target);
+                if (sourceId && targetId) {
+                  await storage.createKgEdge({
+                    docId: doc.id,
+                    sourceId,
+                    targetId,
+                    relation: e.relation
+                  });
+                }
+              }
+            }
+            await storage.updateDocumentStatus(doc.id, "completed");
+          } catch (e) {
+            console.error("Auto-processing error:", e);
+            await storage.updateDocumentStatus(doc.id, "failed");
+          }
+        })();
+      }
 
       res.status(201).json(doc);
     } catch (err) {
@@ -217,29 +274,13 @@ export async function registerRoutes(
     }
   });
 
-  // 4. Smart Chat Route
+  // 4. Smart Chat Route - Uses session-based chat history from frontend
   app.post(api.chat.query.path, isAuthenticated, async (req: any, res) => {
     try {
-      const { message, mode, conversationId, documentId, imageBase64 } = req.body;
-      const userId = req.user.claims.sub;
+      const { message, mode, documentId, imageBase64, chatHistory } = req.body;
 
-      // Ensure conversation exists
-      let convId = conversationId;
-      if (!convId) {
-        // Create conversation with first message as title
-        const title = message.substring(0, 50) + (message.length > 50 ? "..." : "");
-        const newConv = await chatStorage.createConversation(title);
-        convId = newConv.id;
-      }
-
-      // Save user message
-      await chatStorage.createMessage(convId, "user", message);
-
-      // Get conversation history for context
-      const previousMessages = await chatStorage.getMessagesByConversation(convId);
-      
-      // Build conversation history for OpenAI (limit to last 20 messages for token efficiency)
-      const historyMessages = previousMessages.slice(-20).map(msg => ({
+      // Use chat history from frontend (session storage)
+      const historyMessages = (chatHistory || []).map((msg: any) => ({
         role: msg.role as "user" | "assistant",
         content: msg.content
       }));
@@ -268,14 +309,12 @@ export async function registerRoutes(
         });
 
         const answer = aiResponse.choices[0].message.content || "I couldn't analyze the image.";
-        await chatStorage.createMessage(convId, "assistant", answer);
 
         return res.json({
           response: answer,
           confidence: 0.92,
           reasoning,
-          source: "Image Analysis",
-          conversationId: convId
+          source: "Image Analysis"
         });
       }
 
@@ -309,14 +348,11 @@ export async function registerRoutes(
 
       const answer = aiResponse.choices[0].message.content || "I couldn't generate an answer.";
 
-      await chatStorage.createMessage(convId, "assistant", answer);
-
       res.json({
         response: answer,
         confidence: 0.95,
         reasoning,
-        source: documentId ? "Document " + documentId : "General Knowledge",
-        conversationId: convId
+        source: documentId ? "Document " + documentId : "General Knowledge"
       });
 
     } catch (error) {
