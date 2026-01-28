@@ -14,9 +14,9 @@ import { openai } from "./replit_integrations/image/client"; // Reuse OpenAI cli
 
 // PDF parsing using CommonJS require (pdf-parse doesn't support ESM)
 import { createRequire } from "module";
-const require = createRequire(import.meta.url);
 
 async function parsePDF(dataBuffer: Buffer): Promise<string> {
+  const require = createRequire(process.cwd() + '/');
   const pdfParse = require('pdf-parse');
   const data = await pdfParse(dataBuffer);
   return data.text;
