@@ -1,38 +1,75 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { 
+  documents, kgNodes, kgEdges,
+  type Document, type InsertDocument, 
+  type KgNode, type InsertKgNode,
+  type KgEdge, type InsertKgEdge 
+} from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // Documents
+  createDocument(doc: InsertDocument): Promise<Document>;
+  getDocument(id: number): Promise<Document | undefined>;
+  listDocuments(userId: string): Promise<Document[]>;
+  updateDocumentStatus(id: number, status: string): Promise<void>;
+  updateDocumentSummary(id: number, summary: string): Promise<void>;
+  deleteDocument(id: number): Promise<void>;
+
+  // KG
+  createKgNode(node: InsertKgNode): Promise<KgNode>;
+  createKgEdge(edge: InsertKgEdge): Promise<KgEdge>;
+  getKgByDocId(docId: number): Promise<{ nodes: KgNode[], edges: KgEdge[] }>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  // Documents
+  async createDocument(doc: InsertDocument): Promise<Document> {
+    const [newDoc] = await db.insert(documents).values(doc).returning();
+    return newDoc;
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getDocument(id: number): Promise<Document | undefined> {
+    const [doc] = await db.select().from(documents).where(eq(documents.id, id));
+    return doc;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async listDocuments(userId: string): Promise<Document[]> {
+    return db.select().from(documents).where(eq(documents.userId, userId));
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async updateDocumentStatus(id: number, status: string): Promise<void> {
+    await db.update(documents)
+      .set({ processingStatus: status })
+      .where(eq(documents.id, id));
+  }
+
+  async updateDocumentSummary(id: number, summary: string): Promise<void> {
+    await db.update(documents)
+      .set({ summary, processingStatus: "completed" })
+      .where(eq(documents.id, id));
+  }
+
+  async deleteDocument(id: number): Promise<void> {
+    await db.delete(documents).where(eq(documents.id, id));
+  }
+
+  // KG
+  async createKgNode(node: InsertKgNode): Promise<KgNode> {
+    const [newNode] = await db.insert(kgNodes).values(node).returning();
+    return newNode;
+  }
+
+  async createKgEdge(edge: InsertKgEdge): Promise<KgEdge> {
+    const [newEdge] = await db.insert(kgEdges).values(edge).returning();
+    return newEdge;
+  }
+
+  async getKgByDocId(docId: number): Promise<{ nodes: KgNode[], edges: KgEdge[] }> {
+    const nodes = await db.select().from(kgNodes).where(eq(kgNodes.docId, docId));
+    const edges = await db.select().from(kgEdges).where(eq(kgEdges.docId, docId));
+    return { nodes, edges };
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
