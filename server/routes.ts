@@ -191,6 +191,32 @@ export async function registerRoutes(
     res.json(kg);
   });
 
+  app.delete(api.documents.delete.path, isAuthenticated, async (req: any, res) => {
+    try {
+      const docId = Number(req.params.id);
+      const doc = await storage.getDocument(docId);
+      
+      if (!doc) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      if (doc.userId !== req.user.claims.sub) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      // Delete associated file if exists
+      if (doc.fileUrl && fs.existsSync(doc.fileUrl)) {
+        fs.unlinkSync(doc.fileUrl);
+      }
+      
+      await storage.deleteDocument(docId);
+      res.status(204).send();
+    } catch (err) {
+      console.error("Delete error:", err);
+      res.status(500).json({ message: "Failed to delete document" });
+    }
+  });
+
   // 4. Smart Chat Route
   app.post(api.chat.query.path, isAuthenticated, async (req: any, res) => {
     try {
