@@ -76,8 +76,7 @@ export const kgEdgesRelations = relations(kgEdges, ({ one }) => ({
 export const insertDocumentSchema = createInsertSchema(documents).omit({ 
   id: true, 
   createdAt: true,
-  summary: true,
-  processingStatus: true 
+  summary: true
 });
 
 export const insertKgNodeSchema = createInsertSchema(kgNodes).omit({ id: true });
@@ -88,6 +87,8 @@ export type Document = typeof documents.$inferSelect;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type KgNode = typeof kgNodes.$inferSelect;
 export type KgEdge = typeof kgEdges.$inferSelect;
+export type InsertKgNode = z.infer<typeof insertKgNodeSchema>;
+export type InsertKgEdge = z.infer<typeof insertKgEdgeSchema>;
 
 // Specialized types
 export type GraphData = {
