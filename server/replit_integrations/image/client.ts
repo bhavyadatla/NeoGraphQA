@@ -13,10 +13,10 @@ export const openai = new OpenAI({
  */
 export async function generateImageBuffer(
   prompt: string,
-  size: "1024x1024" | "512x512" | "256x256" = "1024x1024"
+  size: "1024x1024" = "1024x1024"
 ): Promise<Buffer> {
   const response = await openai.images.generate({
-    model: "gpt-image-1",
+    model: "dall-e-3",
     prompt,
     size,
   });
@@ -42,8 +42,8 @@ export async function editImages(
   );
 
   const response = await openai.images.edit({
-    model: "gpt-image-1",
-    image: images,
+    model: "dall-e-2",
+    image: images[0],
     prompt,
   });
 
