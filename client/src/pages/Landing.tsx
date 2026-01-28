@@ -122,11 +122,6 @@ export default function Landing() {
                 Try for Free
               </Button>
             </a>
-            <a href="https://github.com/replit/neographqa" target="_blank" rel="noreferrer">
-              <Button variant="outline" size="lg" className="h-12 px-8 text-base backdrop-blur-sm">
-                View Documentation
-              </Button>
-            </a>
           </motion.div>
         </div>
       </section>
