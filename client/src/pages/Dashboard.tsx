@@ -52,8 +52,8 @@ export default function Dashboard() {
               <h1 className="text-3xl font-display font-bold text-foreground">Dashboard</h1>
               <p className="text-muted-foreground mt-2">Overview of your knowledge base status.</p>
             </div>
-            <Link href="/documents" className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
-              Manage Documents <ArrowRight className="w-4 h-4" />
+            <Link href="/chat" className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
+              Start Chat <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 

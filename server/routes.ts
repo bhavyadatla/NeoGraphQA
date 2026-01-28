@@ -50,28 +50,37 @@ export async function registerRoutes(
     try {
       if (!req.file) return res.status(400).json({ message: "No file uploaded" });
       
-      const fileType = req.file.mimetype === "application/pdf" ? "pdf" : "txt";
+      const fileType = req.file.mimetype.startsWith("image/") ? "image" : (req.file.mimetype === "application/pdf" ? "pdf" : "txt");
       let content = "";
 
       // Extract text
       if (fileType === "pdf") {
-        const dataBuffer = fs.readFileSync(req.file.path);
-        content = await parsePDF(dataBuffer);
+        try {
+          const dataBuffer = fs.readFileSync(req.file.path);
+          content = await parsePDF(dataBuffer);
+        } catch (pdfErr) {
+          console.error("PDF Parsing Error:", pdfErr);
+          // Fallback or rethrow
+          throw new Error("Failed to parse PDF content");
+        }
+      } else if (fileType === "image") {
+        content = "Image file uploaded";
       } else {
         content = fs.readFileSync(req.file.path, "utf-8");
       }
 
-      // Cleanup temp file
-      fs.unlinkSync(req.file.path);
+      // Cleanup temp file - wait, we should move it to a permanent location if it's an image we want to display
+      // For now, let's just extract text for documents and keep images in uploads/
+      // In a real app, we'd use object storage.
 
       const userId = req.user.claims.sub; // From Replit Auth
       const doc = await storage.createDocument({
         userId,
         title: req.file.originalname,
         content,
-        fileUrl: req.file.path, // We might want to persist it properly later, but for MVP we extracted text
+        fileUrl: req.file.path, 
         fileType,
-        processingStatus: "pending"
+        processingStatus: fileType === "image" ? "completed" : "pending"
       });
 
       res.status(201).json(doc);
@@ -91,6 +100,17 @@ export async function registerRoutes(
     if (!doc) return res.status(404).json({ message: "Not found" });
     if (doc.userId !== req.user.claims.sub) return res.status(401).json({ message: "Unauthorized" });
     res.json(doc);
+  });
+
+  // Serve image files
+  app.get("/api/images/:id", isAuthenticated, async (req: any, res) => {
+    const doc = await storage.getDocument(Number(req.params.id));
+    if (!doc || doc.fileType !== "image" || !doc.fileUrl) {
+      return res.status(404).json({ message: "Image not found" });
+    }
+    if (doc.userId !== req.user.claims.sub) return res.status(401).json({ message: "Unauthorized" });
+    
+    res.sendFile(path.resolve(doc.fileUrl));
   });
 
   app.post(api.documents.process.path, isAuthenticated, async (req: any, res) => {

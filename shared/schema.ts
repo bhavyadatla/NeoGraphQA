@@ -18,7 +18,7 @@ export const documents = pgTable("documents", {
   title: text("title").notNull(),
   content: text("content").notNull(), // Extracted text
   fileUrl: text("file_url"), // Path to stored file
-  fileType: text("file_type").notNull(), // pdf, txt, csv
+  fileType: text("file_type").notNull(), // pdf, txt, csv, image
   createdAt: timestamp("created_at").defaultNow(),
   summary: text("summary"), // Abstractive summary
   processingStatus: text("processing_status").default("pending"), // pending, processing, completed, failed
