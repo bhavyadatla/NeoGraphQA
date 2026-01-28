@@ -18,7 +18,11 @@ export function registerImageRoutes(app: Express): void {
         response_format: "b64_json"
       });
 
-      const imageData = response.data[0];
+      const imageData = response.data?.[0];
+      
+      if (!imageData) {
+        return res.status(500).json({ error: "No image data returned" });
+      }
       
       res.json({
         b64_json: imageData.b64_json,
