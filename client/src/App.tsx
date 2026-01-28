@@ -58,6 +58,10 @@ function Router() {
         <ProtectedRoute component={Chat} />
       </Route>
       
+      <Route path="/chat/:id">
+        <ProtectedRoute component={Chat} />
+      </Route>
+      
       <Route path="/documents">
         <ProtectedRoute component={Documents} />
       </Route>

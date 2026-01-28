@@ -1,3 +1,8 @@
+import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from 'react-markdown';
+import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,6 +16,8 @@ import {
 } from "@/components/ui/select";
 import { useChat } from "@/hooks/use-chat";
 import { useDocuments, useUploadDocument } from "@/hooks/use-documents";
+import { useQuery } from "@tanstack/react-query";
+import { useParams } from "wouter";
 import { 
   Send, 
   Bot, 
@@ -26,11 +33,6 @@ import {
   X,
   LayoutGrid
 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
-import ReactMarkdown from 'react-markdown';
-import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Message = {
   role: 'user' | 'assistant';
@@ -42,13 +44,29 @@ type Message = {
 };
 
 export default function Chat() {
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Hello! I am NeoGraphQA. I can answer questions from your documents using PDF analysis, Knowledge Graphs, or Image recognition. How can I help?' }
-  ]);
+  const params = useParams();
+  const conversationId = params.id ? parseInt(params.id) : null;
+
+  const { data: conversationData, isLoading: isLoadingConversation } = useQuery<any>({
+    queryKey: [`/api/conversations/${conversationId}`],
+    enabled: !!conversationId,
+  });
+
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<'auto' | 'pdf' | 'kg' | 'image'>('auto');
   const [selectedDocId, setSelectedDocId] = useState<string>("all");
   const [showGallery, setShowGallery] = useState(false);
+
+  useEffect(() => {
+    if (conversationData?.messages) {
+      setMessages(conversationData.messages);
+    } else {
+      setMessages([
+        { role: 'assistant', content: 'Hello! I am NeoGraphQA. I can answer questions from your documents using PDF analysis, Knowledge Graphs, or Image recognition. How can I help?' }
+      ]);
+    }
+  }, [conversationData]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: documents } = useDocuments();
@@ -87,7 +105,8 @@ export default function Chat() {
       const response = await chatMutation.mutateAsync({
         message: userMessage,
         mode,
-        documentId: selectedDocId === "all" ? undefined : Number(selectedDocId)
+        documentId: selectedDocId === "all" ? undefined : Number(selectedDocId),
+        conversationId: conversationId || undefined
       });
 
       setMessages(prev => [...prev, {

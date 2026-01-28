@@ -10,18 +10,35 @@ export function registerImageRoutes(app: Express): void {
         return res.status(400).json({ error: "Prompt is required" });
       }
 
-      const response = await openai.images.generate({
-        model: "dall-e-3",
-        prompt,
-        n: 1,
-        size: size as "1024x1024",
-        response_format: "url"
+      // Improved prompt for better analysis
+      const analysisPrompt = `Analyze this image in extreme detail. 
+      If it's a document: Extract all text, identify the document type, and list key entities.
+      If it's a scene: Describe objects, colors, lighting, and any text present.
+      If it's a technical diagram: Explain the components and their relationships.
+      User question: ${prompt}`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: analysisPrompt },
+              {
+                type: "image_url",
+                image_url: {
+                  url: imageData.url,
+                },
+              },
+            ],
+          },
+        ],
       });
 
-      const imageData = response.data[0];
+      const aiResponse = response.choices[0]?.message?.content || "No analysis available.";
       res.json({
         url: imageData.url,
-        b64_json: imageData.b64_json,
+        analysis: aiResponse
       });
     } catch (error) {
       console.error("Error generating image:", error);

@@ -8,13 +8,25 @@ import {
   User,
   LogOut,
   History,
-  Plus
+  Plus,
+  MoreVertical,
+  Pencil,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 const NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
@@ -25,9 +37,46 @@ const NAV_ITEMS = [
 ];
 
 export function AppSidebar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { logout, user } = useAuth();
   const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+
+  const { data: conversations } = useQuery<any[]>({
+    queryKey: ["/api/conversations"],
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/conversations/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      toast({ title: "Chat deleted" });
+    },
+  });
+
+  const renameMutation = useMutation({
+    mutationFn: async ({ id, title }: { id: number, title: string }) => {
+      await apiRequest("PATCH", `/api/conversations/${id}`, { title });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      toast({ title: "Chat renamed" });
+    },
+  });
+
+  const createChatMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/conversations", { title: "New Chat" });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      setLocation(`/chat/${data.id}`);
+      setOpen(false);
+    }
+  });
 
   const NavContent = () => (
     <div className="flex flex-col h-full bg-sidebar border-r border-border text-sidebar-foreground">
@@ -60,14 +109,65 @@ export function AppSidebar() {
         </div>
 
         <div className="pt-4 border-t border-border/50">
-           <p className="px-4 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center justify-between">
+           <div className="px-4 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center justify-between">
              History
-             <History className="w-3 h-3" />
-           </p>
-           <div className="px-2 space-y-1">
-             <Button variant="ghost" className="w-full justify-start text-xs font-normal h-8 px-2 text-muted-foreground italic">
-                No recent chats...
+             <Button 
+               variant="ghost" 
+               size="icon" 
+               className="h-4 w-4"
+               onClick={() => createChatMutation.mutate()}
+             >
+               <Plus className="w-3 h-3" />
              </Button>
+           </div>
+           <div className="px-2 space-y-1">
+             {conversations && conversations.length > 0 ? (
+               conversations.map((chat) => (
+                 <div key={chat.id} className="group relative">
+                   <Link href={`/chat/${chat.id}`}>
+                     <div
+                       className={cn(
+                         "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer truncate pr-8",
+                         location === `/chat/${chat.id}` 
+                           ? "bg-primary/10 text-primary font-medium" 
+                           : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                       )}
+                       onClick={() => setOpen(false)}
+                     >
+                       <MessageSquare className="w-3 h-3 shrink-0" />
+                       <span className="truncate">{chat.title}</span>
+                     </div>
+                   </Link>
+                   <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <DropdownMenu>
+                       <DropdownMenuTrigger asChild>
+                         <Button variant="ghost" size="icon" className="h-6 w-6">
+                           <MoreVertical className="w-3 h-3" />
+                         </Button>
+                       </DropdownMenuTrigger>
+                       <DropdownMenuContent align="end">
+                         <DropdownMenuItem onClick={() => {
+                           const newTitle = prompt("Enter new title:", chat.title);
+                           if (newTitle) renameMutation.mutate({ id: chat.id, title: newTitle });
+                         }}>
+                           <Pencil className="w-3 h-3 mr-2" />
+                           Rename
+                         </DropdownMenuItem>
+                         <DropdownMenuItem 
+                           className="text-destructive"
+                           onClick={() => deleteMutation.mutate(chat.id)}
+                         >
+                           <Trash2 className="w-3 h-3 mr-2" />
+                           Delete
+                         </DropdownMenuItem>
+                       </DropdownMenuContent>
+                     </DropdownMenu>
+                   </div>
+                 </div>
+               ))
+             ) : (
+               <p className="px-3 text-[10px] text-muted-foreground italic py-2">No recent chats...</p>
+             )}
            </div>
         </div>
       </nav>

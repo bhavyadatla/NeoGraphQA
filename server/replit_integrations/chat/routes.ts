@@ -47,6 +47,22 @@ export function registerChatRoutes(app: Express): void {
     }
   });
 
+  // Update conversation title
+  app.patch("/api/conversations/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { title } = req.body;
+      const conversation = await chatStorage.updateConversation(id, title);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      res.json(conversation);
+    } catch (error) {
+      console.error("Error updating conversation:", error);
+      res.status(500).json({ error: "Failed to update conversation" });
+    }
+  });
+
   // Delete conversation
   app.delete("/api/conversations/:id", async (req: Request, res: Response) => {
     try {
@@ -67,6 +83,20 @@ export function registerChatRoutes(app: Express): void {
 
       // Save user message
       await chatStorage.createMessage(conversationId, "user", content);
+
+      // Auto-rename conversation if it's the first message
+      const messagesCount = await chatStorage.getMessagesByConversation(conversationId);
+      if (messagesCount.length === 1) {
+        const titleResponse = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: "Generate a short, descriptive 3-5 word title for a chat conversation based on the user's first message. Return only the title text." },
+            { role: "user", content: content }
+          ],
+        });
+        const newTitle = titleResponse.choices[0]?.message?.content?.trim() || "New Chat";
+        await chatStorage.updateConversation(conversationId, newTitle);
+      }
 
       // Get conversation history for context
       const messages = await chatStorage.getMessagesByConversation(conversationId);
