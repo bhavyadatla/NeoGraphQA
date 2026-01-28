@@ -2,6 +2,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dropzone } from "@/components/Dropzone";
+import { cn } from "@/lib/utils";
 import { 
   Dialog, 
   DialogContent, 

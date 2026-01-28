@@ -86,6 +86,16 @@ export default function ImageAnalysis() {
     setIsGenerating(false);
   };
 
+  const handleDownload = () => {
+    if (!generatedImage) return;
+    const link = document.createElement('a');
+    link.href = generatedImage;
+    link.download = `generated-image-${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="flex h-screen bg-background">
       <AppSidebar />
@@ -192,8 +202,13 @@ export default function ImageAnalysis() {
                 </Card>
 
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Result</CardTitle>
+                    {generatedImage && (
+                      <Button variant="outline" size="sm" onClick={handleDownload}>
+                        Download
+                      </Button>
+                    )}
                   </CardHeader>
                   <CardContent>
                     <div className="aspect-square bg-muted/20 rounded-xl border border-border/50 flex items-center justify-center overflow-hidden">

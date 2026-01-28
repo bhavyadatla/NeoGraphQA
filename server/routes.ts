@@ -140,8 +140,8 @@ export async function registerRoutes(
         const kgResponse = await openai.chat.completions.create({
           model: "gpt-4o",
           messages: [
-            { role: "system", content: "Extract up to 20 key entities and relationships from the text. Return JSON: { nodes: [{label, type}], edges: [{source, target, relation}] }." },
-            { role: "user", content: doc.content.substring(0, 5000) }
+            { role: "system", content: "Extract a comprehensive knowledge graph from the text. Identify key entities (nodes) and their relationships (edges). Focus on accuracy and structural depth. Return JSON: { nodes: [{label, type}], edges: [{source, target, relation}] }." },
+            { role: "user", content: doc.content.substring(0, 8000) }
           ],
           response_format: { type: "json_object" }
         });
