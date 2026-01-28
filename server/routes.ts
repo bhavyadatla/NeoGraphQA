@@ -12,10 +12,13 @@ import { registerImageRoutes } from "./replit_integrations/image";
 import { chatStorage } from "./replit_integrations/chat/storage"; // Reuse DB storage
 import { openai } from "./replit_integrations/image/client"; // Reuse OpenAI client from image module (same key)
 
-// PDF parsing (will need 'pdf-parse' package) - using dynamic import
+// PDF parsing using CommonJS require (pdf-parse doesn't support ESM)
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+
 async function parsePDF(dataBuffer: Buffer): Promise<string> {
-  const pdfParse = await import('pdf-parse');
-  const data = await pdfParse.default(dataBuffer);
+  const pdfParse = require('pdf-parse');
+  const data = await pdfParse(dataBuffer);
   return data.text;
 }
 
