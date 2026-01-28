@@ -29,21 +29,61 @@ export default function ImageAnalysis() {
   const handleAnalyze = async () => {
     if (!image) return;
     setIsAnalyzing(true);
-    // Simulate analysis API call
-    setTimeout(() => {
-      setAnalysisResult("This image depicts a scientific laboratory setting. Key elements include a microscope, test tubes containing various colored liquids, and a digital display showing molecular structures. The lighting is cool-toned, suggesting a sterile environment.");
+    try {
+      // Convert to base64 and call chat API for image analysis
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = (reader.result as string).split(',')[1];
+        // Call chat endpoint with image context
+        const res = await fetch('/api/chat/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            message: 'Describe this image in detail, identifying key objects, colors, and context.',
+            mode: 'image',
+            imageBase64: base64
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAnalysisResult(data.response);
+        } else {
+          setAnalysisResult("Failed to analyze image. Please try again.");
+        }
+        setIsAnalyzing(false);
+      };
+      reader.readAsDataURL(image);
+    } catch (error) {
+      setAnalysisResult("Error analyzing image.");
       setIsAnalyzing(false);
-    }, 2000);
+    }
   };
 
   const handleGenerate = async () => {
     if (!prompt) return;
     setIsGenerating(true);
-    // Simulate generation API call
-    setTimeout(() => {
-      setGeneratedImage("https://images.unsplash.com/photo-1614728263952-84ea256f9679?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8bmV1cmFsJTIwbmV0d29ya3xlbnwwfHwwfHx8MA%3D%3D"); 
-      setIsGenerating(false);
-    }, 2000);
+    try {
+      const res = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ prompt, size: '1024x1024' })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.b64_json) {
+          setGeneratedImage(`data:image/png;base64,${data.b64_json}`);
+        } else if (data.url) {
+          setGeneratedImage(data.url);
+        }
+      } else {
+        console.error("Image generation failed");
+      }
+    } catch (error) {
+      console.error("Error generating image:", error);
+    }
+    setIsGenerating(false);
   };
 
   return (

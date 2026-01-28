@@ -12,10 +12,12 @@ import { registerImageRoutes } from "./replit_integrations/image";
 import { chatStorage } from "./replit_integrations/chat/storage"; // Reuse DB storage
 import { openai } from "./replit_integrations/image/client"; // Reuse OpenAI client from image module (same key)
 
-// PDF parsing (will need 'pdf-parse' package)
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const pdf = require("pdf-parse");
+// PDF parsing (will need 'pdf-parse' package) - using dynamic import
+async function parsePDF(dataBuffer: Buffer): Promise<string> {
+  const pdfParse = await import('pdf-parse');
+  const data = await pdfParse.default(dataBuffer);
+  return data.text;
+}
 
 // Configure Multer
 const upload = multer({ 
@@ -51,8 +53,7 @@ export async function registerRoutes(
       // Extract text
       if (fileType === "pdf") {
         const dataBuffer = fs.readFileSync(req.file.path);
-        const data = await pdf(dataBuffer);
-        content = data.text;
+        content = await parsePDF(dataBuffer);
       } else {
         content = fs.readFileSync(req.file.path, "utf-8");
       }
@@ -170,7 +171,7 @@ export async function registerRoutes(
   // 4. Smart Chat Route
   app.post(api.chat.query.path, isAuthenticated, async (req: any, res) => {
     try {
-      const { message, mode, conversationId, documentId } = req.body;
+      const { message, mode, conversationId, documentId, imageBase64 } = req.body;
       const userId = req.user.claims.sub;
 
       // Ensure conversation exists
@@ -185,6 +186,35 @@ export async function registerRoutes(
       // Retrieval Logic
       let context = "";
       let reasoning = "Direct answer generation.";
+
+      // Handle Image Analysis mode
+      if (mode === "image" && imageBase64) {
+        reasoning = "Analyzing uploaded image using vision model.";
+        
+        const aiResponse = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: "You are an expert image analyst. Describe images in detail." },
+            { 
+              role: "user", 
+              content: [
+                { type: "text", text: message },
+                { type: "image_url", image_url: { url: `data:image/jpeg;base64,${imageBase64}` } }
+              ]
+            }
+          ]
+        });
+
+        const answer = aiResponse.choices[0].message.content || "I couldn't analyze the image.";
+        await chatStorage.createMessage(convId, "assistant", answer);
+
+        return res.json({
+          response: answer,
+          confidence: 0.92,
+          reasoning,
+          source: "Image Analysis"
+        });
+      }
 
       if (documentId) {
         const doc = await storage.getDocument(documentId);

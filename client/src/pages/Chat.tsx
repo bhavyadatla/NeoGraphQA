@@ -149,9 +149,11 @@ export default function Chat() {
                       ? "bg-primary text-primary-foreground rounded-tr-none" 
                       : "bg-card border border-border rounded-tl-none"
                   )}>
-                    <ReactMarkdown className="prose-custom">
-                      {msg.content}
-                    </ReactMarkdown>
+                    <div className="prose-custom">
+                      <ReactMarkdown>
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
                   </div>
 
                   {/* Assistant Extras: Source & Reasoning */}
