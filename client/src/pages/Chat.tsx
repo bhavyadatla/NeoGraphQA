@@ -45,11 +45,12 @@ type Message = {
 
 export default function Chat() {
   const params = useParams();
-  const conversationId = params.id ? parseInt(params.id) : null;
+  const initialConversationId = params.id ? parseInt(params.id) : null;
+  const [currentConversationId, setCurrentConversationId] = useState<number | null>(initialConversationId);
 
   const { data: conversationData, isLoading: isLoadingConversation } = useQuery<any>({
-    queryKey: [`/api/conversations/${conversationId}`],
-    enabled: !!conversationId,
+    queryKey: [`/api/conversations/${currentConversationId}`],
+    enabled: !!currentConversationId,
   });
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -61,12 +62,12 @@ export default function Chat() {
   useEffect(() => {
     if (conversationData?.messages) {
       setMessages(conversationData.messages);
-    } else {
+    } else if (!currentConversationId) {
       setMessages([
         { role: 'assistant', content: 'Hello! I am NeoGraphQA. I can answer questions from your documents using PDF analysis, Knowledge Graphs, or Image recognition. How can I help?' }
       ]);
     }
-  }, [conversationData]);
+  }, [conversationData, currentConversationId]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: documents } = useDocuments();
@@ -106,8 +107,13 @@ export default function Chat() {
         message: userMessage,
         mode,
         documentId: selectedDocId === "all" ? undefined : Number(selectedDocId),
-        conversationId: conversationId || undefined
+        conversationId: currentConversationId || undefined
       });
+
+      // Track conversation ID for continuing the conversation
+      if (response.conversationId && !currentConversationId) {
+        setCurrentConversationId(response.conversationId);
+      }
 
       setMessages(prev => [...prev, {
         role: 'assistant',

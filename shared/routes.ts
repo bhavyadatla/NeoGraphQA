@@ -93,6 +93,7 @@ export const api = {
           source: z.string().optional(),
           confidence: z.number().optional(),
           reasoning: z.string().optional(),
+          conversationId: z.number().optional(),
         }),
         401: errorSchemas.unauthorized,
       },

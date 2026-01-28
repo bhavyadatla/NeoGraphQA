@@ -226,15 +226,27 @@ export async function registerRoutes(
       // Ensure conversation exists
       let convId = conversationId;
       if (!convId) {
-        const newConv = await chatStorage.createConversation("New Chat");
+        // Create conversation with first message as title
+        const title = message.substring(0, 50) + (message.length > 50 ? "..." : "");
+        const newConv = await chatStorage.createConversation(title);
         convId = newConv.id;
       }
 
+      // Save user message
       await chatStorage.createMessage(convId, "user", message);
+
+      // Get conversation history for context
+      const previousMessages = await chatStorage.getMessagesByConversation(convId);
+      
+      // Build conversation history for OpenAI (limit to last 20 messages for token efficiency)
+      const historyMessages = previousMessages.slice(-20).map(msg => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content
+      }));
 
       // Retrieval Logic
       let context = "";
-      let reasoning = "Direct answer generation.";
+      let reasoning = "Direct answer generation with conversation context.";
 
       // Handle Image Analysis mode
       if (mode === "image" && imageBase64) {
@@ -243,7 +255,8 @@ export async function registerRoutes(
         const aiResponse = await openai.chat.completions.create({
           model: "gpt-4o",
           messages: [
-            { role: "system", content: "You are an expert image analyst. Describe images in detail." },
+            { role: "system", content: "You are an expert image analyst. Describe images in detail. Remember previous conversation context." },
+            ...historyMessages.slice(0, -1), // Include history except current message
             { 
               role: "user", 
               content: [
@@ -261,7 +274,8 @@ export async function registerRoutes(
           response: answer,
           confidence: 0.92,
           reasoning,
-          source: "Image Analysis"
+          source: "Image Analysis",
+          conversationId: convId
         });
       }
 
@@ -271,20 +285,25 @@ export async function registerRoutes(
           if (mode === "kg") {
             const kg = await storage.getKgByDocId(documentId);
             context = `Knowledge Graph Nodes: ${kg.nodes.map(n => n.label).join(", ")}. Edges: ${kg.edges.map(e => `${e.sourceId}->${e.relation}->${e.targetId}`).join(", ")}.`;
-            reasoning = "Using Knowledge Graph entities.";
+            reasoning = "Using Knowledge Graph entities with conversation context.";
           } else {
-            context = `Document Content: ${doc.content.substring(0, 5000)}...`; // Truncate for MVP
-            reasoning = "Using Document text content.";
+            context = `Document Content: ${doc.content.substring(0, 5000)}...`;
+            reasoning = "Using Document text content with conversation context.";
           }
         }
       }
 
-      // Generate Answer
+      // Build system message with context
+      const systemMessage = context 
+        ? `You are NeoGraphQA, a helpful AI assistant. You have access to the following context: ${context}. Remember and reference previous messages in this conversation.`
+        : `You are NeoGraphQA, a helpful AI assistant. Remember and reference previous messages in this conversation to provide coherent, contextual responses.`;
+
+      // Generate Answer with full conversation history
       const aiResponse = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
-          { role: "system", content: `You are a helpful assistant. Context: ${context}` },
-          { role: "user", content: message }
+          { role: "system", content: systemMessage },
+          ...historyMessages
         ]
       });
 
@@ -294,9 +313,10 @@ export async function registerRoutes(
 
       res.json({
         response: answer,
-        confidence: 0.95, // Mock confidence for now
+        confidence: 0.95,
         reasoning,
-        source: documentId ? "Document " + documentId : "General Knowledge"
+        source: documentId ? "Document " + documentId : "General Knowledge",
+        conversationId: convId
       });
 
     } catch (error) {
