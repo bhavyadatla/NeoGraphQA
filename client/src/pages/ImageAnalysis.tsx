@@ -287,10 +287,11 @@ export default function ImageAnalysisPage() {
                               </motion.div>
                             )}
                           </AnimatePresence>
-                      </CardContent>
-                    </Card>
-                  </div>
+                        </CardContent>
+                      </Card>
+                    </div>
 
+                    <Card className="lg:col-span-4 border-border/50 shadow-sm flex flex-col overflow-hidden mb-8">
                   <Card className="lg:col-span-4 border-border/50 shadow-sm flex flex-col overflow-hidden mb-8">
                     <CardHeader className="border-b bg-muted/10 py-3">
                       <CardTitle className="text-xs font-bold uppercase tracking-widest flex items-center gap-2">

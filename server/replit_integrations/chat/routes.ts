@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import OpenAI from "openai";
 import { chatStorage } from "./storage";
+import { isAuthenticated } from "../auth";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -100,7 +101,7 @@ export function registerChatRoutes(app: Express): void {
       const userId = (req.user as any)?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       
-      const conversation = await chatStorage.createConversation(userId, title || "New Chat");
+      const conversation = await chatStorage.createConversation(userId);
       return res.status(201).json(conversation);
     } catch (error) {
       console.error("Error creating conversation:", error);
@@ -146,7 +147,7 @@ export function registerChatRoutes(app: Express): void {
       const { content, attachments } = req.body;
 
       // Save user message
-      await chatStorage.createMessage(conversationId, "user", content, attachments || []);
+      await chatStorage.createMessage(conversationId, "user", content);
 
       // Auto-rename conversation if it's the first message
       const messagesCount = await chatStorage.getMessagesByConversation(conversationId);
