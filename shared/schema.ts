@@ -75,7 +75,7 @@ export const generatedImages = pgTable("generated_images", {
 
 export const imageAnalyses = pgTable("image_analyses", {
   id: serial("id").primaryKey(),
-  userId: text("user_id"),
+  userId: integer("user_id"),
   imageUrl: text("image_url").notNull(),
   question: text("question").notNull(),
   answer: text("answer").notNull(),

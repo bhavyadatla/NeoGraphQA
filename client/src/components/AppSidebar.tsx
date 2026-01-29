@@ -62,15 +62,6 @@ export function AppSidebar() {
       </nav>
 
       <div className="p-4 border-t border-border/50 bg-sidebar/50">
-        <div className="flex items-center gap-3 px-3 py-2 mb-2 rounded-xl bg-card border border-border/50">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-xs shrink-0">
-            {user?.firstName?.[0].toUpperCase() || "U"}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{user?.firstName || "User"}</p>
-            <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
-          </div>
-        </div>
         <Button 
           variant="ghost" 
           size="sm"
