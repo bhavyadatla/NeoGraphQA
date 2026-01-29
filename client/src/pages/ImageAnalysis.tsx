@@ -167,17 +167,17 @@ export default function ImageAnalysisPage() {
           <h1 className="text-xl font-bold font-display">Image Studio</h1>
         </header>
 
-        <main className="flex-1 overflow-hidden p-8 bg-muted/5">
-          <div className="max-w-6xl mx-auto h-full flex flex-col">
-            <Tabs defaultValue="analyze" className="flex-1 flex flex-col">
+        <main className="flex-1 overflow-y-auto p-8 bg-muted/5">
+          <div className="max-w-6xl mx-auto">
+            <Tabs defaultValue="analyze" className="flex flex-col">
               <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-8 bg-muted/30">
                 <TabsTrigger value="analyze">Image Analysis</TabsTrigger>
                 <TabsTrigger value="generate">Text to Image</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="analyze" className="flex-1 min-h-0 animate-in slide-in-from-bottom-4 duration-500">
-                <div className="grid lg:grid-cols-12 gap-8 h-full">
-                  <div className="lg:col-span-8 space-y-6 overflow-y-auto pr-4 pb-8 min-h-0">
+              <TabsContent value="analyze" className="animate-in slide-in-from-bottom-4 duration-500">
+                <div className="grid lg:grid-cols-12 gap-8">
+                  <div className="lg:col-span-8 space-y-6 pb-8">
                     <div className="grid md:grid-cols-2 gap-6">
                       <Card className="border-border/50 shadow-sm">
                         <CardHeader>
@@ -298,9 +298,9 @@ export default function ImageAnalysisPage() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="generate" className="flex-1 min-h-0 animate-in slide-in-from-bottom-4 duration-500">
-                <div className="grid lg:grid-cols-12 gap-8 h-full">
-                  <div className="lg:col-span-8 space-y-6 overflow-y-auto pr-4 pb-8 min-h-0">
+              <TabsContent value="generate" className="animate-in slide-in-from-bottom-4 duration-500">
+                <div className="grid lg:grid-cols-12 gap-8">
+                  <div className="lg:col-span-8 space-y-6 pb-8">
                     <Card className="border-border/50 shadow-sm">
                       <CardHeader>
                         <CardTitle className="text-sm font-semibold flex items-center gap-2">
