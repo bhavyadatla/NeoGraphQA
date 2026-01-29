@@ -261,9 +261,11 @@ export default function Chat() {
                           ? "bg-primary text-primary-foreground" 
                           : "bg-muted/30 border border-border/50"
                       )}>
-                        <ReactMarkdown className="prose-custom dark:prose-invert max-w-none">
-                          {msg.content}
-                        </ReactMarkdown>
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <ReactMarkdown>
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
                       </div>
                     </div>
                   </div>
