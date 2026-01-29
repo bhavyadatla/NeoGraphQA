@@ -19,6 +19,7 @@ export default function Dashboard() {
   const { data: documents } = useDocuments();
   const { data: generatedImages } = useQuery<GeneratedImage[]>({
     queryKey: ["/api/images/generated"],
+    retry: false
   });
 
   const pdfs = documents?.filter(d => d.fileType === 'pdf') || [];

@@ -78,6 +78,10 @@ export default function Chat() {
   const createConversationMutation = useMutation({
     mutationFn: async (title: string) => {
       const res = await apiRequest("POST", "/api/conversations", { title });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "Failed to create conversation");
+      }
       return res.json();
     },
     onSuccess: (data) => {

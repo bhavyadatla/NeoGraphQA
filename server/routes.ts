@@ -153,7 +153,9 @@ export async function registerRoutes(
   });
 
   app.get(api.documents.get.path, isAuthenticated, async (req: any, res) => {
-    const doc = await storage.getDocument(Number(req.params.id));
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid document ID" });
+    const doc = await storage.getDocument(id);
     if (!doc) return res.status(404).json({ message: "Not found" });
     if (doc.userId !== (req.user as any).id) return res.status(401).json({ message: "Unauthorized" });
     res.json(doc);
@@ -161,7 +163,9 @@ export async function registerRoutes(
 
   // Serve image files
   app.get("/api/images/:id", isAuthenticated, async (req: any, res) => {
-    const doc = await storage.getDocument(Number(req.params.id));
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid image ID" });
+    const doc = await storage.getDocument(id);
     if (!doc || doc.fileType !== "image" || !doc.fileUrl) {
       return res.status(404).json({ message: "Image not found" });
     }
@@ -172,7 +176,9 @@ export async function registerRoutes(
 
   // Download any document file
   app.get("/api/documents/:id/download", isAuthenticated, async (req: any, res) => {
-    const doc = await storage.getDocument(Number(req.params.id));
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid document ID" });
+    const doc = await storage.getDocument(id);
     if (!doc) {
       return res.status(404).json({ message: "Document not found" });
     }
@@ -195,7 +201,8 @@ export async function registerRoutes(
   });
 
   app.post(api.documents.process.path, isAuthenticated, async (req: any, res) => {
-    const docId = Number(req.params.id);
+    const docId = parseInt(req.params.id as string);
+    if (isNaN(docId)) return res.status(400).json({ message: "Invalid document ID" });
     const doc = await storage.getDocument(docId);
     
     if (!doc) return res.status(404).json({ message: "Not found" });
@@ -267,14 +274,16 @@ export async function registerRoutes(
   });
 
   app.get(api.kg.get.path, isAuthenticated, async (req: any, res) => {
-    const docId = Number(req.params.id);
-    const kg = await storage.getKgByDocId(docId);
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    const kg = await storage.getKgByDocId(id);
     res.json(kg);
   });
 
   app.delete(api.documents.delete.path, isAuthenticated, async (req: any, res) => {
     try {
-      const docId = Number(req.params.id);
+      const docId = parseInt(req.params.id as string);
+      if (isNaN(docId)) return res.status(400).json({ message: "Invalid ID" });
       const doc = await storage.getDocument(docId);
       
       if (!doc) {

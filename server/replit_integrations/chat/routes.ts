@@ -23,6 +23,7 @@ export function registerChatRoutes(app: Express): void {
   app.get("/api/conversations/:id", async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id as string);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid conversation ID" });
       const conversation = await chatStorage.getConversation(id);
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
@@ -54,6 +55,7 @@ export function registerChatRoutes(app: Express): void {
   app.patch("/api/conversations/:id", async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id as string);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid conversation ID" });
       const { title } = req.body;
       const conversation = await chatStorage.updateConversation(id, title);
       if (!conversation) {
@@ -70,6 +72,7 @@ export function registerChatRoutes(app: Express): void {
   app.delete("/api/conversations/:id", async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id as string);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid conversation ID" });
       await chatStorage.deleteConversation(id);
       res.status(204).send();
     } catch (error) {
@@ -81,7 +84,8 @@ export function registerChatRoutes(app: Express): void {
   // Send message and get AI response (streaming)
   app.post("/api/conversations/:id/messages", async (req: Request, res: Response) => {
     try {
-      const conversationId = parseInt(req.params.id);
+      const conversationId = parseInt(req.params.id as string);
+      if (isNaN(conversationId)) return res.status(400).json({ error: "Invalid conversation ID" });
       const { content, attachments } = req.body;
 
       // Save user message
