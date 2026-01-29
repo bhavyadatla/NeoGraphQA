@@ -22,7 +22,6 @@ const NAV_ITEMS = [
   { label: "PDF Studio", icon: FileText, href: "/pdf-studio" },
   { label: "Image Studio", icon: ImageIcon, href: "/images" },
   { label: "Knowledge Graph", icon: Network, href: "/kg" },
-  { label: "Text To Image", icon: LayoutGrid, href: "/text-to-image" },
   { label: "History", icon: Clock, href: "/history" },
   { label: "My Account", icon: User, href: "/profile" },
 ];
