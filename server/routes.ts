@@ -289,6 +289,103 @@ export async function registerRoutes(
     res.json(kg);
   });
 
+  // Ask Question from Knowledge Graph
+  app.post("/api/kg/ask", isAuthenticated, async (req: any, res) => {
+    try {
+      const { documentId, question } = req.body;
+      if (!documentId || !question) {
+        return res.status(400).json({ message: "Document ID and question are required" });
+      }
+
+      const kg = await storage.getKgByDocId(documentId);
+      if (!kg || !kg.nodes.length) {
+        return res.status(400).json({ message: "No knowledge graph found for this document" });
+      }
+
+      // Format the KG for the prompt
+      const nodesDescription = kg.nodes.map(n => `${n.label} (${n.type})`).join(", ");
+      const edgesDescription = kg.edges.map(e => {
+        const source = kg.nodes.find(n => n.id === e.sourceId);
+        const target = kg.nodes.find(n => n.id === e.targetId);
+        return source && target ? `${source.label} --[${e.relation}]--> ${target.label}` : null;
+      }).filter(Boolean).join("; ");
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { 
+            role: "system", 
+            content: `You are a knowledge graph analyst. Answer the user's question based on the following knowledge graph.
+            
+NODES: ${nodesDescription}
+
+RELATIONSHIPS: ${edgesDescription}
+
+Provide a clear answer and explain the reasoning path through the graph that led to your answer.
+Return your response as JSON: { "answer": "your detailed answer", "reasoningPath": ["step 1", "step 2", ...] }`
+          },
+          { role: "user", content: question }
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 1000
+      });
+
+      const result = JSON.parse(response.choices[0].message.content || '{"answer": "Unable to process", "reasoningPath": []}');
+      res.json(result);
+    } catch (error) {
+      console.error("KG Ask error:", error);
+      res.status(500).json({ message: "Failed to process question" });
+    }
+  });
+
+  // Generate KG Insights
+  app.post("/api/kg/insights", isAuthenticated, async (req: any, res) => {
+    try {
+      const { documentId } = req.body;
+      if (!documentId) {
+        return res.status(400).json({ message: "Document ID is required" });
+      }
+
+      const kg = await storage.getKgByDocId(documentId);
+      if (!kg || !kg.nodes.length) {
+        return res.status(400).json({ message: "No knowledge graph found for this document" });
+      }
+
+      // Format the KG for the prompt
+      const nodesDescription = kg.nodes.map(n => `${n.label} (${n.type})`).join(", ");
+      const edgesDescription = kg.edges.map(e => {
+        const source = kg.nodes.find(n => n.id === e.sourceId);
+        const target = kg.nodes.find(n => n.id === e.targetId);
+        return source && target ? `${source.label} --[${e.relation}]--> ${target.label}` : null;
+      }).filter(Boolean).join("; ");
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { 
+            role: "system", 
+            content: `Analyze the following knowledge graph and provide insights about its structure, important concepts, and key relationships.
+
+NODES (${kg.nodes.length}): ${nodesDescription}
+
+RELATIONSHIPS (${kg.edges.length}): ${edgesDescription}
+
+Return your response as JSON: { "summary": "A 2-3 sentence summary of the knowledge graph", "keyFindings": ["finding 1", "finding 2", "finding 3", ...] }`
+          },
+          { role: "user", content: "Analyze this knowledge graph and provide insights." }
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 800
+      });
+
+      const result = JSON.parse(response.choices[0].message.content || '{"summary": "Unable to analyze", "keyFindings": []}');
+      res.json(result);
+    } catch (error) {
+      console.error("KG Insights error:", error);
+      res.status(500).json({ message: "Failed to generate insights" });
+    }
+  });
+
   // Image Analysis History
   app.get("/api/image-analyses", isAuthenticated, async (req: any, res) => {
     try {
