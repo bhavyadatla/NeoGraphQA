@@ -72,6 +72,17 @@ export const kgEdgesRelations = relations(kgEdges, ({ one }) => ({
 }));
 
 
+// === GENERATED IMAGES ===
+export const generatedImages = pgTable("generated_images", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  prompt: text("prompt").notNull(),
+  imageData: text("image_data").notNull(), // Base64 image data
+  size: text("size").default("1024x1024"),
+  revisedPrompt: text("revised_prompt"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // === SCHEMAS ===
 export const insertDocumentSchema = createInsertSchema(documents).omit({ 
   id: true, 
@@ -81,6 +92,7 @@ export const insertDocumentSchema = createInsertSchema(documents).omit({
 
 export const insertKgNodeSchema = createInsertSchema(kgNodes).omit({ id: true });
 export const insertKgEdgeSchema = createInsertSchema(kgEdges).omit({ id: true });
+export const insertGeneratedImageSchema = createInsertSchema(generatedImages).omit({ id: true, createdAt: true });
 
 // === TYPES ===
 export type Document = typeof documents.$inferSelect;
@@ -89,6 +101,8 @@ export type KgNode = typeof kgNodes.$inferSelect;
 export type KgEdge = typeof kgEdges.$inferSelect;
 export type InsertKgNode = z.infer<typeof insertKgNodeSchema>;
 export type InsertKgEdge = z.infer<typeof insertKgEdgeSchema>;
+export type GeneratedImage = typeof generatedImages.$inferSelect;
+export type InsertGeneratedImage = z.infer<typeof insertGeneratedImageSchema>;
 
 // Specialized types
 export type GraphData = {

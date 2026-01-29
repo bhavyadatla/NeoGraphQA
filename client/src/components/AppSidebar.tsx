@@ -6,7 +6,8 @@ import {
   Network, 
   Image as ImageIcon, 
   LogOut,
-  Menu
+  Menu,
+  LayoutGrid
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -19,7 +20,8 @@ const NAV_ITEMS = [
   { label: "Chat QA", icon: MessageSquare, href: "/chat" },
   { label: "Documents", icon: FileText, href: "/documents" },
   { label: "Knowledge Graph", icon: Network, href: "/kg" },
-  { label: "Image Analysis", icon: ImageIcon, href: "/images" },
+  { label: "Image Studio", icon: ImageIcon, href: "/images" },
+  { label: "Gallery", icon: LayoutGrid, href: "/gallery" },
 ];
 
 export function AppSidebar() {

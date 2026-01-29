@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ImageIcon, Wand2, Upload, Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Dropzone } from "@/components/Dropzone";
+import { queryClient } from "@/lib/queryClient";
 
 export default function ImageAnalysis() {
   const [image, setImage] = useState<File | null>(null);
@@ -74,6 +75,8 @@ export default function ImageAnalysis() {
         const data = await res.json();
         if (data.b64_json) {
           setGeneratedImage(`data:image/png;base64,${data.b64_json}`);
+          // Invalidate gallery cache to show new image
+          queryClient.invalidateQueries({ queryKey: ["/api/generated-images"] });
         } else if (data.url) {
           setGeneratedImage(data.url);
         }

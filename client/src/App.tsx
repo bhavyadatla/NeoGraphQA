@@ -12,6 +12,7 @@ import Chat from "@/pages/Chat";
 import Documents from "@/pages/Documents";
 import KnowledgeGraph from "@/pages/KnowledgeGraph";
 import ImageAnalysis from "@/pages/ImageAnalysis";
+import Gallery from "@/pages/Gallery";
 import Profile from "@/pages/Profile";
 import NotFound from "@/pages/not-found";
 
@@ -72,6 +73,10 @@ function Router() {
       
       <Route path="/images">
         <ProtectedRoute component={ImageAnalysis} />
+      </Route>
+
+      <Route path="/gallery">
+        <ProtectedRoute component={Gallery} />
       </Route>
 
       <Route path="/profile">
