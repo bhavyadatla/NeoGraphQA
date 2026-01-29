@@ -7,6 +7,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 
 import Landing from "@/pages/Landing";
+import Login from "@/pages/Login";
+import Signup from "@/pages/Signup";
 import Dashboard from "@/pages/Dashboard";
 import Chat from "@/pages/Chat";
 import Documents from "@/pages/Documents";
@@ -49,6 +51,14 @@ function Router() {
     <Switch>
       <Route path="/">
         {user ? <Redirect to="/dashboard" /> : <Landing />}
+      </Route>
+
+      <Route path="/login">
+        {user ? <Redirect to="/dashboard" /> : <Login />}
+      </Route>
+
+      <Route path="/signup">
+        {user ? <Redirect to="/dashboard" /> : <Signup />}
       </Route>
       
       <Route path="/dashboard">

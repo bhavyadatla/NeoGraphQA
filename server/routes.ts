@@ -73,7 +73,7 @@ export async function registerRoutes(
       // For now, let's just extract text for documents and keep images in uploads/
       // In a real app, we'd use object storage.
 
-      const userId = req.user.claims.sub; // From Replit Auth
+      const userId = (req.user as any).id; // From custom auth
       const doc = await storage.createDocument({
         userId,
         title: req.file.originalname,
@@ -148,14 +148,14 @@ export async function registerRoutes(
   });
 
   app.get(api.documents.list.path, isAuthenticated, async (req: any, res) => {
-    const docs = await storage.listDocuments(req.user.claims.sub);
+    const docs = await storage.listDocuments((req.user as any).id);
     res.json(docs);
   });
 
   app.get(api.documents.get.path, isAuthenticated, async (req: any, res) => {
     const doc = await storage.getDocument(Number(req.params.id));
     if (!doc) return res.status(404).json({ message: "Not found" });
-    if (doc.userId !== req.user.claims.sub) return res.status(401).json({ message: "Unauthorized" });
+    if (doc.userId !== (req.user as any).id) return res.status(401).json({ message: "Unauthorized" });
     res.json(doc);
   });
 
@@ -165,7 +165,7 @@ export async function registerRoutes(
     if (!doc || doc.fileType !== "image" || !doc.fileUrl) {
       return res.status(404).json({ message: "Image not found" });
     }
-    if (doc.userId !== req.user.claims.sub) return res.status(401).json({ message: "Unauthorized" });
+    if (doc.userId !== (req.user as any).id) return res.status(401).json({ message: "Unauthorized" });
     
     res.sendFile(path.resolve(doc.fileUrl));
   });
@@ -199,7 +199,7 @@ export async function registerRoutes(
     const doc = await storage.getDocument(docId);
     
     if (!doc) return res.status(404).json({ message: "Not found" });
-    if (doc.userId !== req.user.claims.sub) return res.status(401).json({ message: "Unauthorized" });
+    if (doc.userId !== (req.user as any).id) return res.status(401).json({ message: "Unauthorized" });
 
     // Start background processing
     (async () => {

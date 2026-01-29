@@ -113,24 +113,26 @@ export default function Landing() {
               <Info className="w-4 h-4" />
               About
             </a>
-            <a href="/api/login" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors" data-testid="link-login">
-              <LogIn className="w-4 h-4" />
-              Login
-            </a>
-            <a href="/api/login">
+            <Link href="/login">
+              <a className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors" data-testid="link-login">
+                <LogIn className="w-4 h-4" />
+                Login
+              </a>
+            </Link>
+            <Link href="/signup">
               <Button size="sm" className="font-semibold shadow-lg shadow-primary/20" data-testid="button-signup">
                 <UserPlus className="w-4 h-4 mr-2" />
                 Sign Up
               </Button>
-            </a>
+            </Link>
           </div>
 
           <div className="md:hidden">
-            <a href="/api/login">
+            <Link href="/login">
               <Button size="sm" className="font-semibold" data-testid="button-get-started-mobile">
                 Get Started
               </Button>
-            </a>
+            </Link>
           </div>
         </div>
       </nav>
@@ -223,12 +225,12 @@ export default function Landing() {
             variants={itemVariants}
             className="pt-4"
           >
-            <a href="/api/login">
+            <Link href="/login">
               <Button size="lg" className="h-12 px-8 text-base bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-xl shadow-primary/20 transition-all hover:scale-105" data-testid="button-login-experience">
                 Login to Experience
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
-            </a>
+            </Link>
           </motion.div>
         </div>
       </section>
@@ -395,12 +397,12 @@ export default function Landing() {
             <p className="text-muted-foreground mb-8">
               Join thousands of researchers and professionals using NeoGraphQA to unlock insights from their data.
             </p>
-            <a href="/api/login">
+            <Link href="/login">
               <Button size="lg" className="h-12 px-8 text-base bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-xl shadow-primary/20 transition-all hover:scale-105" data-testid="button-cta-login">
                 Login to Experience
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
-            </a>
+            </Link>
           </motion.div>
         </div>
       </section>
