@@ -11,21 +11,7 @@ import * as chat from "./models/chat";
 export * from "./models/auth";
 export * from "./models/chat";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  email: text("email").notNull().unique(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  profileImageUrl: text("profile_image_url"),
-  isVerified: boolean("is_verified").default(false),
-  verificationCode: text("verification_code"),
-});
-
-export const sessions = pgTable("sessions", {
-  sid: text("sid").primaryKey(),
-  sess: jsonb("sess").notNull(),
-  expire: timestamp("expire").notNull(),
-});
+// Note: users and sessions tables are defined in ./models/auth.ts
 
 // === DOCUMENTS ===
 export const documents = pgTable("documents", {
@@ -89,7 +75,7 @@ export const generatedImages = pgTable("generated_images", {
 
 export const imageAnalyses = pgTable("image_analyses", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
+  userId: text("user_id"),
   imageUrl: text("image_url").notNull(),
   question: text("question").notNull(),
   answer: text("answer").notNull(),
