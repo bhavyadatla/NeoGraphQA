@@ -171,11 +171,11 @@ export async function setupCustomAuth(app: Express) {
   ));
 
   passport.serializeUser((user: any, cb) => cb(null, user.id));
-  passport.deserializeUser(async (id: string, cb) => {
+  passport.deserializeUser(async (id: any, cb) => {
     try {
       const [user] = await db.select()
         .from(users)
-        .where(eq(users.id, id))
+        .where(eq(users.id, Number(id)))
         .limit(1);
       cb(null, user || null);
     } catch (error) {

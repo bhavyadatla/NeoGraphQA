@@ -435,7 +435,5 @@ export default function KnowledgeGraph() {
         </main>
       </div>
     </div>
-      </div>
-    </div>
   );
 }
