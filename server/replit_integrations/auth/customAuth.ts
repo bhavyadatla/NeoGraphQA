@@ -238,7 +238,15 @@ export async function setupCustomAuth(app: Express) {
           if (err) {
             return res.status(500).json({ message: "Login after signup failed" });
           }
-          res.json({ message: "Account created successfully", user });
+          res.json({ message: "Account created successfully", user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            preferredName: user.preferredName,
+            preferences: user.preferences,
+            profileImageUrl: user.profileImageUrl,
+          }});
         });
       } else {
         res.status(500).json({ message: "Signup failed" });
@@ -296,7 +304,15 @@ export async function setupCustomAuth(app: Express) {
         if (err) {
           return res.status(500).json({ message: "Login failed" });
         }
-        res.json({ message: "Login successful", user });
+        res.json({ message: "Login successful", user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          preferredName: user.preferredName,
+          preferences: user.preferences,
+          profileImageUrl: user.profileImageUrl,
+        }});
       });
     } catch (error) {
       console.error("Login error:", error);

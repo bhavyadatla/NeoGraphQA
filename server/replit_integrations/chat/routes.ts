@@ -10,9 +10,10 @@ const openai = new OpenAI({
 
 export function registerChatRoutes(app: Express): void {
   // Send message and get AI response (streaming)
-  app.post("/api/chat/query", async (req: Request, res: Response) => {
+  app.post("/api/chat/query", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { message, mode, documentId, imageBase64 } = req.body;
+      const userId = (req.user as any)?.id;
 
       // Handle Image Analysis mode
       if (mode === "image" && imageBase64) {
@@ -67,9 +68,10 @@ export function registerChatRoutes(app: Express): void {
   });
 
   // Get all conversations
-  app.get("/api/conversations", async (req: Request, res: Response) => {
+  app.get("/api/conversations", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const conversations = await chatStorage.getAllConversations();
+      const userId = (req.user as any)?.id;
+      const conversations = await chatStorage.getAllConversations(userId);
       res.json(conversations);
     } catch (error) {
       console.error("Error fetching conversations:", error);
@@ -78,14 +80,20 @@ export function registerChatRoutes(app: Express): void {
   });
 
   // Get single conversation with messages
-  app.get("/api/conversations/:id", async (req: Request, res: Response) => {
+  app.get("/api/conversations/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id as string);
       if (isNaN(id)) return res.status(400).json({ error: "Invalid conversation ID" });
+      const userId = (req.user as any)?.id;
+      
       const conversation = await chatStorage.getConversation(id);
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
       }
+      if (conversation.userId !== String(userId)) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
       const messages = await chatStorage.getMessagesByConversation(id);
       return res.json({ ...conversation, messages });
     } catch (error) {
@@ -94,14 +102,13 @@ export function registerChatRoutes(app: Express): void {
     }
   });
 
-      // Create new conversation
+  // Create new conversation
   app.post("/api/conversations", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const { title } = req.body;
       const userId = (req.user as any)?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       
-      const conversation = await chatStorage.createConversation(userId);
+      const conversation = await chatStorage.createConversation(String(userId));
       return res.status(201).json(conversation);
     } catch (error) {
       console.error("Error creating conversation:", error);
@@ -110,16 +117,19 @@ export function registerChatRoutes(app: Express): void {
   });
 
   // Update conversation title
-  app.patch("/api/conversations/:id", async (req: Request, res: Response) => {
+  app.patch("/api/conversations/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id as string);
       if (isNaN(id)) return res.status(400).json({ error: "Invalid conversation ID" });
       const { title } = req.body;
-      const conversation = await chatStorage.updateConversation(id, title);
-      if (!conversation) {
-        return res.status(404).json({ error: "Conversation not found" });
-      }
-      res.json(conversation);
+      const userId = (req.user as any)?.id;
+
+      const conversation = await chatStorage.getConversation(id);
+      if (!conversation) return res.status(404).json({ error: "Conversation not found" });
+      if (conversation.userId !== String(userId)) return res.status(401).json({ error: "Unauthorized" });
+
+      const updated = await chatStorage.updateConversation(id, title);
+      res.json(updated);
     } catch (error) {
       console.error("Error updating conversation:", error);
       res.status(500).json({ error: "Failed to update conversation" });
@@ -127,10 +137,16 @@ export function registerChatRoutes(app: Express): void {
   });
 
   // Delete conversation
-  app.delete("/api/conversations/:id", async (req: Request, res: Response) => {
+  app.delete("/api/conversations/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id as string);
       if (isNaN(id)) return res.status(400).json({ error: "Invalid conversation ID" });
+      const userId = (req.user as any)?.id;
+
+      const conversation = await chatStorage.getConversation(id);
+      if (!conversation) return res.status(404).json({ error: "Conversation not found" });
+      if (conversation.userId !== String(userId)) return res.status(401).json({ error: "Unauthorized" });
+
       await chatStorage.deleteConversation(id);
       res.status(204).send();
     } catch (error) {
@@ -139,19 +155,26 @@ export function registerChatRoutes(app: Express): void {
     }
   });
 
-      // Send message and get AI response (streaming)
+  // Send message and get AI response (streaming)
   app.post("/api/conversations/:id/messages", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const conversationId = parseInt(req.params.id as string);
       if (isNaN(conversationId)) return res.status(400).json({ error: "Invalid conversation ID" });
       const { content, attachments } = req.body;
+      const userId = (req.user as any)?.id;
+
+      const conversation = await chatStorage.getConversation(conversationId);
+      if (!conversation) return res.status(404).json({ error: "Conversation not found" });
+      if (conversation.userId !== String(userId)) return res.status(401).json({ error: "Unauthorized" });
 
       // Save user message
       await chatStorage.createMessage(conversationId, "user", content);
 
+      // Get conversation history for context
+      const messages = await chatStorage.getMessagesByConversation(conversationId);
+      
       // Auto-rename conversation if it's the first message
-      const messagesCount = await chatStorage.getMessagesByConversation(conversationId);
-      if (messagesCount.length === 1) {
+      if (messages.length === 1) {
         const titleResponse = await openai.chat.completions.create({
           model: "gpt-4o",
           messages: [
@@ -163,8 +186,6 @@ export function registerChatRoutes(app: Express): void {
         await chatStorage.updateConversation(conversationId, newTitle);
       }
 
-      // Get conversation history for context
-      const messages = await chatStorage.getMessagesByConversation(conversationId);
       const chatMessages = messages.map((m) => ({
         role: m.role as "user" | "assistant",
         content: m.content,
@@ -209,4 +230,5 @@ export function registerChatRoutes(app: Express): void {
     }
   });
 }
+
 
