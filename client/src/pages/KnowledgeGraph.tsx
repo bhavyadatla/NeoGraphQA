@@ -15,21 +15,9 @@ import {
 import { useDocuments } from "@/hooks/use-documents";
 import { useKnowledgeGraph } from "@/hooks/use-kg";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Network, 
-  Loader2, 
-  Circle, 
-  ArrowRight, 
-  Sparkles, 
-  MessageSquare, 
-  Brain,
-  TrendingUp,
-  Lightbulb,
-  Send,
-  ChevronRight
-} from "lucide-react";
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
 
 export default function KnowledgeGraph() {
   const { toast } = useToast();
