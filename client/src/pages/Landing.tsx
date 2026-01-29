@@ -1,19 +1,27 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { 
   ArrowRight, 
   Bot, 
-  Cpu, 
   Network, 
   FileText, 
-  LayoutDashboard,
   Quote,
-  Zap,
-  CheckCircle2,
-  Shield,
   Brain,
   Layers,
-  Users
+  Shield,
+  Upload,
+  Image,
+  Sparkles,
+  MessageSquare,
+  FileSearch,
+  ImageIcon,
+  GitBranch,
+  ListChecks,
+  Home,
+  Info,
+  LogIn,
+  UserPlus
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -53,6 +61,34 @@ const testimonials = [
   }
 ];
 
+const features = [
+  {
+    icon: FileSearch,
+    title: "PDF Question Answering",
+    description: "Upload PDFs and ask questions directly. Get accurate answers extracted from your documents instantly."
+  },
+  {
+    icon: ImageIcon,
+    title: "Image Question Answering",
+    description: "Analyze images and ask questions about visual content. Our AI understands charts, diagrams, and photos."
+  },
+  {
+    icon: GitBranch,
+    title: "Knowledge Graph Reasoning",
+    description: "Build and query knowledge graphs from your data. Discover hidden relationships and connections."
+  },
+  {
+    icon: ListChecks,
+    title: "Summarization",
+    description: "Generate concise summaries from lengthy documents. Extract key points and insights effortlessly."
+  },
+  {
+    icon: MessageSquare,
+    title: "Chatbot",
+    description: "Interactive AI chatbot powered by your knowledge base. Get conversational answers to complex queries."
+  }
+];
+
 export default function Landing() {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground overflow-hidden">
@@ -67,16 +103,40 @@ export default function Landing() {
               NeoGraphQA
             </span>
           </div>
-          <a href="/api/login">
-            <Button className="font-semibold shadow-lg shadow-primary/20">
-              Get Started <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </a>
+          
+          <div className="hidden md:flex items-center gap-8">
+            <a href="#hero" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors" data-testid="link-home">
+              <Home className="w-4 h-4" />
+              Home
+            </a>
+            <a href="#about" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors" data-testid="link-about">
+              <Info className="w-4 h-4" />
+              About
+            </a>
+            <a href="/api/login" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors" data-testid="link-login">
+              <LogIn className="w-4 h-4" />
+              Login
+            </a>
+            <a href="/api/login">
+              <Button size="sm" className="font-semibold shadow-lg shadow-primary/20" data-testid="button-signup">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Sign Up
+              </Button>
+            </a>
+          </div>
+
+          <div className="md:hidden">
+            <a href="/api/login">
+              <Button size="sm" className="font-semibold" data-testid="button-get-started-mobile">
+                Get Started
+              </Button>
+            </a>
+          </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="relative pt-32 pb-20 px-6 overflow-hidden">
+      {/* Hero Section */}
+      <section id="hero" className="relative pt-32 pb-16 px-6 overflow-hidden">
         {/* Abstract Background Blobs */}
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[128px] -z-10 animate-pulse" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-[128px] -z-10 animate-pulse delay-1000" />
@@ -96,7 +156,7 @@ export default function Landing() {
             initial="hidden"
             animate="visible"
             variants={itemVariants}
-            className="text-5xl md:text-7xl font-bold font-display tracking-tight leading-[1.1]"
+            className="text-4xl md:text-6xl font-bold font-display tracking-tight leading-[1.1]"
           >
             Unlock Intelligence from <br/>
             <span className="text-primary">Documents</span> & <span className="text-accent">Knowledge Graphs</span>
@@ -106,28 +166,111 @@ export default function Landing() {
             initial="hidden"
             animate="visible"
             variants={itemVariants}
-            className="text-xl text-muted-foreground max-w-2xl mx-auto"
+            className="text-lg text-muted-foreground max-w-2xl mx-auto"
           >
             A multi-modal platform that transforms PDFs, text, and images into a queryable knowledge base using advanced Graph RAG.
           </motion.p>
 
+          {/* Large Input Box */}
           <motion.div 
             initial="hidden"
             animate="visible"
             variants={itemVariants}
-            className="flex items-center justify-center gap-4 pt-4"
+            className="max-w-2xl mx-auto pt-4"
+          >
+            <div className="relative">
+              <Input 
+                type="text"
+                placeholder="What can I help with?"
+                className="w-full h-14 px-6 text-lg rounded-2xl border-2 border-border/50 bg-card shadow-lg focus:border-primary focus:ring-2 focus:ring-primary/20"
+                data-testid="input-main-query"
+              />
+              <Button 
+                size="icon" 
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl"
+                data-testid="button-submit-query"
+              >
+                <ArrowRight className="w-5 h-5" />
+              </Button>
+            </div>
+          </motion.div>
+
+          {/* Action Buttons */}
+          <motion.div 
+            initial="hidden"
+            animate="visible"
+            variants={itemVariants}
+            className="flex flex-wrap items-center justify-center gap-4 pt-2"
+          >
+            <Button variant="outline" className="h-11 px-6 rounded-xl border-2 hover:border-primary/50" data-testid="button-upload-pdf">
+              <FileText className="w-4 h-4 mr-2" />
+              Upload PDF
+            </Button>
+            <Button variant="outline" className="h-11 px-6 rounded-xl border-2 hover:border-primary/50" data-testid="button-upload-image">
+              <Upload className="w-4 h-4 mr-2" />
+              Upload Image
+            </Button>
+            <Button variant="outline" className="h-11 px-6 rounded-xl border-2 hover:border-accent/50" data-testid="button-generate-image">
+              <Sparkles className="w-4 h-4 mr-2 text-accent" />
+              Generate Image
+            </Button>
+          </motion.div>
+
+          {/* Login to Experience Button */}
+          <motion.div 
+            initial="hidden"
+            animate="visible"
+            variants={itemVariants}
+            className="pt-4"
           >
             <a href="/api/login">
-              <Button size="lg" className="h-12 px-8 text-base bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-xl shadow-primary/20 transition-all hover:scale-105">
-                Try for Free
+              <Button size="lg" className="h-12 px-8 text-base bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-xl shadow-primary/20 transition-all hover:scale-105" data-testid="button-login-experience">
+                Login to Experience
+                <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </a>
           </motion.div>
         </div>
       </section>
 
+      {/* Features Section */}
+      <section className="py-20 px-6 bg-muted/30 border-t border-border/50">
+        <div className="max-w-7xl mx-auto">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={containerVariants}
+            className="text-center mb-12 space-y-4"
+          >
+            <h2 className="text-3xl md:text-5xl font-display font-bold">Powerful Features</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Everything you need to extract, analyze, and understand your data.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <FeatureCard 
+                  icon={feature.icon}
+                  title={feature.title}
+                  description={feature.description}
+                />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* About Section */}
-      <section className="py-24 px-6 bg-muted/30 border-t border-border/50">
+      <section id="about" className="py-24 px-6 border-t border-border/50">
         <div className="max-w-7xl mx-auto">
           <motion.div 
             initial="hidden"
@@ -147,7 +290,7 @@ export default function Landing() {
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="bg-background p-8 rounded-2xl border border-border/50 shadow-sm hover:shadow-md transition-all"
+              className="bg-card p-8 rounded-2xl border border-border/50 shadow-sm hover:shadow-md transition-all"
             >
               <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-6">
                 <Brain className="w-6 h-6" />
@@ -162,7 +305,7 @@ export default function Landing() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="bg-background p-8 rounded-2xl border border-border/50 shadow-sm hover:shadow-md transition-all"
+              className="bg-card p-8 rounded-2xl border border-border/50 shadow-sm hover:shadow-md transition-all"
             >
               <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center text-accent mb-6">
                 <Layers className="w-6 h-6" />
@@ -177,7 +320,7 @@ export default function Landing() {
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="bg-background p-8 rounded-2xl border border-border/50 shadow-sm hover:shadow-md transition-all"
+              className="bg-card p-8 rounded-2xl border border-border/50 shadow-sm hover:shadow-md transition-all"
             >
               <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center text-green-500 mb-6">
                 <Shield className="w-6 h-6" />
@@ -192,7 +335,7 @@ export default function Landing() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-24 px-6 overflow-hidden border-t border-border/50">
+      <section className="py-24 px-6 overflow-hidden bg-muted/30 border-t border-border/50">
         <div className="max-w-7xl mx-auto">
           <motion.div 
             initial={{ opacity: 0 }}
@@ -221,6 +364,7 @@ export default function Landing() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
                 className="bg-card p-6 rounded-2xl border border-border relative group hover:shadow-lg transition-shadow"
+                data-testid={`card-testimonial-${i}`}
               >
                 <Quote className="absolute top-6 right-6 w-8 h-8 text-primary/10 group-hover:text-primary/20 transition-colors" />
                 <p className="text-foreground/90 italic mb-8 relative z-10 text-left">"{t.content}"</p>
@@ -239,24 +383,25 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="py-20 px-6 bg-muted/30 border-t border-border/50">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-          <FeatureCard 
-            icon={FileText}
-            title="PDF & Text Analysis"
-            description="Upload documents and instantly extract insights, summaries, and key entities using NLP."
-          />
-          <FeatureCard 
-            icon={Network}
-            title="Knowledge Graph"
-            description="Visualize relationships between concepts automatically extracted from your data."
-          />
-          <FeatureCard 
-            icon={Bot}
-            title="Multi-Modal QA"
-            description="Ask questions about your data with a ChatGPT-like interface powered by Graph RAG."
-          />
+      {/* CTA Section */}
+      <section className="py-20 px-6 border-t border-border/50">
+        <div className="max-w-3xl mx-auto text-center space-y-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Ready to get started?</h2>
+            <p className="text-muted-foreground mb-8">
+              Join thousands of researchers and professionals using NeoGraphQA to unlock insights from their data.
+            </p>
+            <a href="/api/login">
+              <Button size="lg" className="h-12 px-8 text-base bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-xl shadow-primary/20 transition-all hover:scale-105" data-testid="button-cta-login">
+                Login to Experience
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </a>
+          </motion.div>
         </div>
       </section>
 
@@ -264,14 +409,14 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center px-6 gap-8">
           <div className="flex items-center gap-2">
             <Network className="w-5 h-5 text-primary" />
-            <span className="font-display font-bold">NeoGraph AI</span>
+            <span className="font-display font-bold text-foreground">NeoGraphQA</span>
           </div>
           <div className="flex gap-8 text-sm">
-            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-            <a href="#" className="hover:text-primary transition-colors">Terms</a>
-            <a href="#" className="hover:text-primary transition-colors">Contact</a>
+            <a href="#" className="hover:text-primary transition-colors" data-testid="link-privacy">Privacy</a>
+            <a href="#" className="hover:text-primary transition-colors" data-testid="link-terms">Terms</a>
+            <a href="#" className="hover:text-primary transition-colors" data-testid="link-contact">Contact</a>
           </div>
-          <p>© 2026 NeoGraph AI. All rights reserved.</p>
+          <p>© 2026 NeoGraphQA. All rights reserved.</p>
         </div>
       </footer>
     </div>
@@ -280,7 +425,7 @@ export default function Landing() {
 
 function FeatureCard({ icon: Icon, title, description }: { icon: any, title: string, description: string }) {
   return (
-    <div className="p-6 rounded-2xl bg-card border border-border shadow-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300 group">
+    <div className="p-6 rounded-2xl bg-card border border-border shadow-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300 group h-full">
       <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
         <Icon className="w-6 h-6 text-primary" />
       </div>
