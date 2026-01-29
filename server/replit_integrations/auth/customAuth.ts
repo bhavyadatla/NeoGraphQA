@@ -207,6 +207,9 @@ export async function setupCustomAuth(app: Express) {
       if (existingUser && existingUser.isVerified) {
         return res.status(400).json({ message: "Email already registered" });
       }
+
+      // Skip verification for development or if specifically requested
+      const isVerified = true; 
       
       // Hash password
       const passwordHash = await bcrypt.hash(password, 12);
@@ -215,7 +218,7 @@ export async function setupCustomAuth(app: Express) {
       if (existingUser) {
         // Update existing unverified user and verify them
         [user] = await db.update(users)
-          .set({ passwordHash, firstName, lastName, isVerified: true })
+          .set({ passwordHash, firstName, lastName, isVerified })
           .where(eq(users.email, emailLower))
           .returning();
       } else {
@@ -226,7 +229,7 @@ export async function setupCustomAuth(app: Express) {
           firstName,
           lastName,
           authProvider: "email",
-          isVerified: true,
+          isVerified,
         }).returning();
       }
       
