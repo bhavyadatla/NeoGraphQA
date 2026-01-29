@@ -353,10 +353,36 @@ export async function setupCustomAuth(app: Express) {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        preferredName: user.preferredName,
+        preferences: user.preferences,
         profileImageUrl: user.profileImageUrl,
       });
     } else {
       res.status(401).json({ message: "Not authenticated" });
+    }
+  });
+
+  // Update profile
+  app.patch("/api/auth/user", isAuthenticated, async (req, res) => {
+    try {
+      const { firstName, lastName, preferredName, preferences } = req.body;
+      const user = req.user as any;
+      
+      const [updatedUser] = await db.update(users)
+        .set({ 
+          firstName, 
+          lastName, 
+          preferredName, 
+          preferences,
+          updatedAt: new Date() 
+        })
+        .where(eq(users.id, user.id))
+        .returning();
+        
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Update profile error:", error);
+      res.status(500).json({ message: "Failed to update profile" });
     }
   });
 

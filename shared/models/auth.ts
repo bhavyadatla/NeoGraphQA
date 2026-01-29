@@ -23,6 +23,8 @@ export const users = pgTable("users", {
   profileImageUrl: text("profile_image_url"),
   isVerified: boolean("is_verified").default(false),
   authProvider: text("auth_provider").default("email"),
+  preferredName: text("preferred_name"),
+  preferences: jsonb("preferences").default({}),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

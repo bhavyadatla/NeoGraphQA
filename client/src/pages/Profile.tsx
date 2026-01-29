@@ -5,10 +5,43 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Save, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Profile() {
   const { user, logout } = useAuth();
+  const { toast } = useToast();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [preferredName, setPreferredName] = useState(user?.preferredName || "");
+  const [firstName, setFirstName] = useState(user?.firstName || "");
+  const [lastName, setLastName] = useState(user?.lastName || "");
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsUpdating(true);
+    try {
+      await apiRequest("PATCH", "/api/auth/user", {
+        firstName,
+        lastName,
+        preferredName
+      });
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "Profile updated",
+        description: "Your changes have been saved successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Update failed",
+        description: error.message || "Failed to update profile",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -19,11 +52,13 @@ export default function Profile() {
             <Avatar className="w-20 h-20 border-4 border-card shadow-xl">
               <AvatarImage src={user?.profileImageUrl || undefined} />
               <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
-                {user?.username?.[0]?.toUpperCase()}
+                {user?.preferredName?.[0]?.toUpperCase() || user?.firstName?.[0]?.toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-3xl font-display font-bold">{user?.username}</h1>
+              <h1 className="text-3xl font-display font-bold">
+                {user?.preferredName || `${user?.firstName} ${user?.lastName}`}
+              </h1>
               <p className="text-muted-foreground">{user?.email}</p>
             </div>
           </div>
@@ -31,29 +66,52 @@ export default function Profile() {
           <Card>
             <CardHeader>
               <CardTitle>Profile Information</CardTitle>
-              <CardDescription>View your account details.</CardDescription>
+              <CardDescription>Update your personal details and preferences.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <CardContent>
+              <form onSubmit={handleUpdateProfile} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>First Name</Label>
-                  <Input value={user?.firstName || ''} readOnly className="bg-muted/30" />
+                  <Label htmlFor="preferredName">Preferred Name</Label>
+                  <Input 
+                    id="preferredName"
+                    value={preferredName} 
+                    onChange={(e) => setPreferredName(e.target.value)}
+                    placeholder="How should we call you?"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input 
+                      id="firstName"
+                      value={firstName} 
+                      onChange={(e) => setFirstName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input 
+                      id="lastName"
+                      value={lastName} 
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Last Name</Label>
-                  <Input value={user?.lastName || ''} readOnly className="bg-muted/30" />
+                  <Label>Email</Label>
+                  <Input value={user?.email || ''} readOnly className="bg-muted/30" />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input value={user?.email || ''} readOnly className="bg-muted/30" />
-              </div>
-              
-              <div className="pt-6">
-                <Button variant="destructive" className="w-full" onClick={() => logout()}>
-                  <LogOut className="w-4 h-4 mr-2" /> Sign Out
-                </Button>
-              </div>
+                
+                <div className="pt-4 flex flex-col gap-3">
+                  <Button type="submit" className="w-full" disabled={isUpdating}>
+                    {isUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                    Save Changes
+                  </Button>
+                  <Button type="button" variant="outline" className="w-full text-destructive hover:text-destructive" onClick={() => logout()}>
+                    <LogOut className="w-4 h-4 mr-2" /> Sign Out
+                  </Button>
+                </div>
+              </form>
             </CardContent>
           </Card>
         </div>
