@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { useDocuments } from "@/hooks/use-documents";
 import { useKnowledgeGraph } from "@/hooks/use-kg";
-import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Network, 
   Loader2, 
@@ -28,7 +28,8 @@ import {
   Send,
   ChevronRight
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function KnowledgeGraph() {
   const { toast } = useToast();
@@ -136,7 +137,11 @@ export default function KnowledgeGraph() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="flex h-screen bg-background"
+    >
       <AppSidebar />
       <div className="flex-1 md:ml-72 flex flex-col h-full overflow-hidden">
         <header className="h-16 border-b flex items-center px-8 bg-card/50 backdrop-blur-md sticky top-0 z-50">
@@ -173,7 +178,12 @@ export default function KnowledgeGraph() {
         </header>
 
         <main className="flex-1 overflow-y-auto bg-muted/5 p-4 lg:p-8">
-          <div className="max-w-[1600px] mx-auto space-y-8">
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="max-w-[1600px] mx-auto space-y-8"
+          >
             {graphData && (
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[
@@ -431,9 +441,9 @@ export default function KnowledgeGraph() {
                 </Card>
               </div>
             </div>
-          </div>
+          </motion.div>
         </main>
       </div>
-    </div>
+    </motion.div>
   );
 }

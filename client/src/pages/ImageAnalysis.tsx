@@ -157,7 +157,11 @@ export default function ImageAnalysisPage() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="flex h-screen bg-background"
+    >
       <AppSidebar />
       <div className="flex-1 md:ml-72 flex flex-col h-full overflow-hidden">
         <header className="h-16 border-b flex items-center px-8 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
@@ -242,24 +246,47 @@ export default function ImageAnalysisPage() {
                         </div>
                       </CardHeader>
                       <CardContent className="p-6">
-                        {analysisResult ? (
-                          <div className="space-y-4">
-                            <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                              {analysisResult}
-                            </div>
-                            <div className="flex items-center gap-2 pt-4 border-t border-border/50">
-                              <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Confidence Score:</span>
-                              <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 text-[10px] font-bold border border-green-500/20">
-                                {confidence}
-                              </span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="h-48 flex flex-col items-center justify-center text-muted-foreground opacity-30">
-                            <ImageIcon className="w-12 h-12 mb-2" />
-                            <p className="text-sm">No analysis performed yet</p>
-                          </div>
-                        )}
+                          <AnimatePresence mode="wait">
+                            {isAnalyzing ? (
+                              <motion.div 
+                                key="analyzing"
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="flex flex-col items-center justify-center py-12 space-y-4"
+                              >
+                                <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                                <p className="text-sm text-muted-foreground animate-pulse">AI is analyzing your image...</p>
+                              </motion.div>
+                            ) : analysisResult ? (
+                              <motion.div 
+                                key="result"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="space-y-4"
+                              >
+                                <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                  {analysisResult}
+                                </div>
+                                <div className="flex items-center gap-2 pt-4 border-t border-border/50">
+                                  <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Confidence Score:</span>
+                                  <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 text-[10px] font-bold border border-green-500/20">
+                                    {confidence}
+                                  </span>
+                                </div>
+                              </motion.div>
+                            ) : (
+                              <motion.div 
+                                key="empty"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="h-48 flex flex-col items-center justify-center text-muted-foreground opacity-30"
+                              >
+                                <ImageIcon className="w-12 h-12 mb-2" />
+                                <p className="text-sm">No analysis performed yet</p>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                       </CardContent>
                     </Card>
                   </div>

@@ -71,7 +71,11 @@ export default function PDFStudio() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="flex h-screen bg-background"
+    >
       <AppSidebar />
       <div className="flex-1 md:ml-72 flex flex-col h-full overflow-hidden">
         <header className="h-16 border-b flex items-center justify-between px-8 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
@@ -133,7 +137,11 @@ export default function PDFStudio() {
 
           {/* Main Content Area */}
           <main className="flex-1 overflow-auto bg-muted/5 p-8">
-            <div className="max-w-4xl mx-auto space-y-8">
+            <motion.div 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className="max-w-4xl mx-auto space-y-8"
+            >
               {!selectedDoc ? (
                 <div className="h-[60vh] flex flex-col items-center justify-center text-center space-y-6">
                   <div className="w-20 h-20 rounded-3xl bg-primary/5 flex items-center justify-center">
@@ -266,10 +274,10 @@ export default function PDFStudio() {
                   </div>
                 </motion.div>
               )}
-            </div>
+            </motion.div>
           </main>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

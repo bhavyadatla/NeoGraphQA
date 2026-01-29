@@ -19,6 +19,9 @@ export function registerChatRoutes(app: Express): void {
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Connection", "keep-alive");
 
+        // Try jpeg first, then png if that fails or just stick to one for consistency
+        const imageUrl = `data:image/jpeg;base64,${imageBase64}`;
+
         const stream = await openai.chat.completions.create({
           model: "gpt-4o",
           stream: true,
@@ -27,8 +30,8 @@ export function registerChatRoutes(app: Express): void {
             { 
               role: "user", 
               content: [
-                { type: "text", text: message || "Describe this image" },
-                { type: "image_url", image_url: { url: `data:image/jpeg;base64,${imageBase64}` } }
+                { type: "text", text: (message as string) || "Describe this image" },
+                { type: "image_url", image_url: { url: imageUrl } }
               ]
             }
           ]
