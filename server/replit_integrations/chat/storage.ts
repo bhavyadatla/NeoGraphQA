@@ -22,8 +22,8 @@ export const chatStorage: IChatStorage = {
     return db.select().from(conversations).orderBy(desc(conversations.createdAt));
   },
 
-  async createConversation(title: string) {
-    const [conversation] = await db.insert(conversations).values({ title }).returning();
+  async createConversation(userId: string, title: string) {
+    const [conversation] = await db.insert(conversations).values({ userId, title }).returning();
     return conversation;
   },
 
@@ -45,8 +45,8 @@ export const chatStorage: IChatStorage = {
     return db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(messages.createdAt);
   },
 
-  async createMessage(conversationId: number, role: string, content: string) {
-    const [message] = await db.insert(messages).values({ conversationId, role, content }).returning();
+  async createMessage(conversationId: number, role: string, content: string, attachments: any[] = []) {
+    const [message] = await db.insert(messages).values({ conversationId, role, content, attachments }).returning();
     return message;
   },
 };

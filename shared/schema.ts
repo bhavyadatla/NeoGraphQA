@@ -1,7 +1,7 @@
 import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // Import Auth and Chat schemas from blueprints
 import * as auth from "./models/auth";
@@ -14,22 +14,22 @@ export * from "./models/chat";
 // === DOCUMENTS ===
 export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
-  userId: text("user_id").notNull(), // Links to auth.users.id
+  userId: text("user_id").notNull(),
   title: text("title").notNull(),
-  content: text("content").notNull(), // Extracted text
-  fileUrl: text("file_url"), // Path to stored file
-  fileType: text("file_type").notNull(), // pdf, txt, csv, image
+  content: text("content").notNull(),
+  fileUrl: text("file_url"),
+  fileType: text("file_type").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-  summary: text("summary"), // Abstractive summary
-  processingStatus: text("processing_status").default("pending"), // pending, processing, completed, failed
+  summary: text("summary"),
+  processingStatus: text("processing_status").default("pending"),
 });
 
 // === KNOWLEDGE GRAPH ===
 export const kgNodes = pgTable("kg_nodes", {
   id: serial("id").primaryKey(),
   docId: integer("doc_id").references(() => documents.id, { onDelete: "cascade" }),
-  label: text("label").notNull(), // Entity name
-  type: text("type").notNull(), // Entity type (Person, Org, etc.)
+  label: text("label").notNull(),
+  type: text("type").notNull(),
   color: text("color").default("#3b82f6"),
 });
 
@@ -38,7 +38,36 @@ export const kgEdges = pgTable("kg_edges", {
   docId: integer("doc_id").references(() => documents.id, { onDelete: "cascade" }),
   sourceId: integer("source_id").references(() => kgNodes.id, { onDelete: "cascade" }),
   targetId: integer("target_id").references(() => kgNodes.id, { onDelete: "cascade" }),
-  relation: text("relation").notNull(), // Relationship label
+  relation: text("relation").notNull(),
+});
+
+// === CONVERSATIONS ===
+export const conversations = pgTable("conversations", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  title: text("title").notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+// === MESSAGES ===
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+  role: text("role").notNull(),
+  content: text("content").notNull(),
+  attachments: jsonb("attachments").default([]),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+// === GENERATED IMAGES ===
+export const generatedImages = pgTable("generated_images", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  prompt: text("prompt").notNull(),
+  imageData: text("image_data").notNull(),
+  size: text("size").default("1024x1024"),
+  revisedPrompt: text("revised_prompt"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // === RELATIONS ===
@@ -71,18 +100,6 @@ export const kgEdgesRelations = relations(kgEdges, ({ one }) => ({
   }),
 }));
 
-
-// === GENERATED IMAGES ===
-export const generatedImages = pgTable("generated_images", {
-  id: serial("id").primaryKey(),
-  userId: text("user_id").notNull(),
-  prompt: text("prompt").notNull(),
-  imageData: text("image_data").notNull(), // Base64 image data
-  size: text("size").default("1024x1024"),
-  revisedPrompt: text("revised_prompt"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
 // === SCHEMAS ===
 export const insertDocumentSchema = createInsertSchema(documents).omit({ 
   id: true, 
@@ -103,8 +120,6 @@ export type InsertKgNode = z.infer<typeof insertKgNodeSchema>;
 export type InsertKgEdge = z.infer<typeof insertKgEdgeSchema>;
 export type GeneratedImage = typeof generatedImages.$inferSelect;
 export type InsertGeneratedImage = z.infer<typeof insertGeneratedImageSchema>;
-
-// Specialized types
 export type GraphData = {
   nodes: KgNode[];
   edges: KgEdge[];
