@@ -17,6 +17,7 @@ import KnowledgeGraph from "@/pages/KnowledgeGraph";
 import ImageAnalysis from "@/pages/ImageAnalysis";
 import Gallery from "@/pages/Gallery";
 import Profile from "@/pages/Profile";
+import History from "@/pages/History";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -96,6 +97,10 @@ function Router() {
 
       <Route path="/profile">
         <ProtectedRoute component={Profile} />
+      </Route>
+
+      <Route path="/history">
+        <ProtectedRoute component={History} />
       </Route>
 
       <Route component={NotFound} />
