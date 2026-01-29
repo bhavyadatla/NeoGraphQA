@@ -177,7 +177,7 @@ export default function ImageAnalysisPage() {
 
               <TabsContent value="analyze" className="flex-1 min-h-0 animate-in slide-in-from-bottom-4 duration-500">
                 <div className="grid lg:grid-cols-12 gap-8 h-full">
-                  <div className="lg:col-span-8 space-y-6 overflow-auto pr-4 pb-8">
+                  <div className="lg:col-span-8 space-y-6 overflow-y-auto pr-4 pb-8 min-h-0">
                     <div className="grid md:grid-cols-2 gap-6">
                       <Card className="border-border/50 shadow-sm">
                         <CardHeader>
@@ -244,7 +244,7 @@ export default function ImageAnalysisPage() {
                       <CardContent className="p-6">
                         {analysisResult ? (
                           <div className="space-y-4">
-                            <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground leading-relaxed">
+                            <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground leading-relaxed whitespace-pre-wrap">
                               {analysisResult}
                             </div>
                             <div className="flex items-center gap-2 pt-4 border-t border-border/50">
@@ -300,7 +300,7 @@ export default function ImageAnalysisPage() {
 
               <TabsContent value="generate" className="flex-1 min-h-0 animate-in slide-in-from-bottom-4 duration-500">
                 <div className="grid lg:grid-cols-12 gap-8 h-full">
-                  <div className="lg:col-span-8 space-y-6 overflow-auto pr-4 pb-8">
+                  <div className="lg:col-span-8 space-y-6 overflow-y-auto pr-4 pb-8 min-h-0">
                     <Card className="border-border/50 shadow-sm">
                       <CardHeader>
                         <CardTitle className="text-sm font-semibold flex items-center gap-2">

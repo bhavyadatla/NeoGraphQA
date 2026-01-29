@@ -8,6 +8,60 @@ const openai = new OpenAI({
 });
 
 export function registerChatRoutes(app: Express): void {
+  // Send message and get AI response (streaming)
+  app.post("/api/chat/query", async (req: Request, res: Response) => {
+    try {
+      const { message, mode, documentId, imageBase64 } = req.body;
+
+      // Handle Image Analysis mode
+      if (mode === "image" && imageBase64) {
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+
+        const stream = await openai.chat.completions.create({
+          model: "gpt-4o",
+          stream: true,
+          messages: [
+            { role: "system", content: "You are an expert image analyst. Describe images in detail. Return ONLY the description. If confidence can be estimated, include it naturally in the text." },
+            { 
+              role: "user", 
+              content: [
+                { type: "text", text: message || "Describe this image" },
+                { type: "image_url", image_url: { url: `data:image/jpeg;base64,${imageBase64}` } }
+              ]
+            }
+          ]
+        });
+
+        for await (const chunk of stream) {
+          const delta = (chunk.choices[0]?.delta as any)?.content || "";
+          if (delta) {
+            res.write(`data: ${JSON.stringify({ content: delta })}\n\n`);
+          }
+        }
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        return res.end();
+      }
+
+      // Generic QA fallback if needed (simplified)
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: message }],
+      });
+      return res.json({ response: completion.choices[0].message.content });
+
+    } catch (error) {
+      console.error("Chat query error:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Failed to process query" });
+      } else {
+        res.write(`data: ${JSON.stringify({ error: "Stream interrupted" })}\n\n`);
+        res.end();
+      }
+    }
+  });
+
   // Get all conversations
   app.get("/api/conversations", async (req: Request, res: Response) => {
     try {
