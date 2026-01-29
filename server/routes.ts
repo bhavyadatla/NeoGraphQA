@@ -289,6 +289,32 @@ export async function registerRoutes(
     res.json(kg);
   });
 
+  // Image Analysis History
+  app.get("/api/image-analyses", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const analyses = await storage.listImageAnalyses(userId);
+      res.json(analyses);
+    } catch (error) {
+      console.error("List image analyses error:", error);
+      res.status(500).json({ message: "Internal Error" });
+    }
+  });
+
+  app.post("/api/image-analyses", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const analysis = await storage.createImageAnalysis({
+        ...req.body,
+        userId,
+      });
+      res.status(201).json(analysis);
+    } catch (error) {
+      console.error("Save image analysis error:", error);
+      res.status(500).json({ message: "Internal Error" });
+    }
+  });
+
   app.delete(api.documents.delete.path, isAuthenticated, async (req: any, res) => {
     try {
       const docId = parseInt(req.params.id as string);

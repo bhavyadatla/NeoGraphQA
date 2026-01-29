@@ -1,11 +1,13 @@
 import { 
   documents, kgNodes, kgEdges,
+  imageAnalyses,
   type Document, type InsertDocument, 
   type KgNode, type InsertKgNode,
-  type KgEdge, type InsertKgEdge 
+  type KgEdge, type InsertKgEdge,
+  type ImageAnalysis, type InsertImageAnalysis
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Documents
@@ -20,6 +22,10 @@ export interface IStorage {
   createKgNode(node: InsertKgNode): Promise<KgNode>;
   createKgEdge(edge: InsertKgEdge): Promise<KgEdge>;
   getKgByDocId(docId: number): Promise<{ nodes: KgNode[], edges: KgEdge[] }>;
+
+  // Image Analysis
+  createImageAnalysis(analysis: InsertImageAnalysis): Promise<ImageAnalysis>;
+  listImageAnalyses(userId: number): Promise<ImageAnalysis[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -69,6 +75,18 @@ export class DatabaseStorage implements IStorage {
     const nodes = await db.select().from(kgNodes).where(eq(kgNodes.docId, docId));
     const edges = await db.select().from(kgEdges).where(eq(kgEdges.docId, docId));
     return { nodes, edges };
+  }
+
+  // Image Analysis
+  async createImageAnalysis(analysis: InsertImageAnalysis): Promise<ImageAnalysis> {
+    const [newAnalysis] = await db.insert(imageAnalyses).values(analysis).returning();
+    return newAnalysis;
+  }
+
+  async listImageAnalyses(userId: number): Promise<ImageAnalysis[]> {
+    return db.select().from(imageAnalyses)
+      .where(eq(imageAnalyses.userId, userId))
+      .orderBy(desc(imageAnalyses.createdAt));
   }
 }
 

@@ -11,6 +11,22 @@ import * as chat from "./models/chat";
 export * from "./models/auth";
 export * from "./models/chat";
 
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  profileImageUrl: text("profile_image_url"),
+  isVerified: boolean("is_verified").default(false),
+  verificationCode: text("verification_code"),
+});
+
+export const sessions = pgTable("sessions", {
+  sid: text("sid").primaryKey(),
+  sess: jsonb("sess").notNull(),
+  expire: timestamp("expire").notNull(),
+});
+
 // === DOCUMENTS ===
 export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
@@ -70,6 +86,20 @@ export const generatedImages = pgTable("generated_images", {
   revisedPrompt: text("revised_prompt"),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+export const imageAnalyses = pgTable("image_analyses", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  imageUrl: text("image_url").notNull(),
+  question: text("question").notNull(),
+  answer: text("answer").notNull(),
+  confidence: text("confidence"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertImageAnalysisSchema = createInsertSchema(imageAnalyses).omit({ id: true, createdAt: true });
+export type InsertImageAnalysis = z.infer<typeof insertImageAnalysisSchema>;
+export type ImageAnalysis = typeof imageAnalyses.$inferSelect;
 
 // === RELATIONS ===
 export const documentsRelations = relations(documents, ({ many }) => ({
