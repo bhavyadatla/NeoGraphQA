@@ -1,34 +1,41 @@
 import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDocuments } from "@/hooks/use-documents";
+import { useQuery } from "@tanstack/react-query";
 import { 
   FileText, 
+  ImageIcon, 
+  MessageSquare, 
   Network, 
-  Activity, 
-  Cpu, 
-  Clock,
-  ArrowRight
+  Activity,
+  UserCircle
 } from "lucide-react";
-import { Link } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 import { motion } from "framer-motion";
+import { type GeneratedImage } from "@shared/schema";
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const { data: documents } = useDocuments();
+  const { data: generatedImages } = useQuery<GeneratedImage[]>({
+    queryKey: ["/api/images/generated"],
+  });
+
+  const pdfs = documents?.filter(d => d.fileType === 'pdf') || [];
+  const images = documents?.filter(d => d.fileType === 'image') || [];
+  const allImages = [...(generatedImages || []).map(img => ({ type: 'generated', ...img })), ...images.map(img => ({ type: 'uploaded', ...img }))];
 
   const stats = [
-    { label: "Total Documents", value: documents?.length || 0, icon: FileText, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { label: "Processed", value: documents?.filter(d => d.processingStatus === 'completed').length || 0, icon: Cpu, color: "text-green-500", bg: "bg-green-500/10" },
-    { label: "Pending", value: documents?.filter(d => d.processingStatus === 'pending').length || 0, icon: Clock, color: "text-orange-500", bg: "bg-orange-500/10" },
-    { label: "Knowledge Nodes", value: "~", icon: Network, color: "text-purple-500", bg: "bg-purple-500/10" },
+    { label: "Uploaded PDFs", value: pdfs.length, icon: FileText, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { label: "Uploaded Images", value: images.length, icon: ImageIcon, color: "text-green-500", bg: "bg-green-500/10" },
+    { label: "Total Questions", value: 0, icon: MessageSquare, color: "text-purple-500", bg: "bg-purple-500/10" },
   ];
 
   const container = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
+      transition: { staggerChildren: 0.1 }
     }
   };
 
@@ -47,21 +54,19 @@ export default function Dashboard() {
           variants={container}
           className="max-w-7xl mx-auto space-y-8"
         >
-          <div className="flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <UserCircle className="w-12 h-12 text-primary" />
             <div>
-              <h1 className="text-3xl font-display font-bold text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground mt-2">Overview of your knowledge base status.</p>
+              <h1 className="text-3xl font-display font-bold text-foreground">Hi {user?.firstName || "there"}</h1>
+              <p className="text-muted-foreground">Welcome back to your intelligence dashboard.</p>
             </div>
-            <Link href="/chat" className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
-              Start Chat <ArrowRight className="w-4 h-4" />
-            </Link>
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {stats.map((stat, i) => (
               <motion.div key={i} variants={item}>
-                <Card className="hover:shadow-lg transition-shadow duration-300 border-border/50">
+                <Card className="hover-elevate transition-all duration-300 border-border/50">
                   <CardContent className="p-6 flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
@@ -76,53 +81,102 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Recent Activity Section */}
-          <motion.div variants={item}>
-            <Card className="border-border/50 shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-primary" />
-                  Recent Documents
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {documents && documents.length > 0 ? (
-                  <div className="divide-y divide-border/50">
-                    {documents.slice(0, 5).map((doc) => (
-                      <div key={doc.id} className="py-4 flex items-center justify-between group">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                            <FileText className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground">{doc.title}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {new Date(doc.createdAt!).toLocaleDateString()} • {(doc.fileType || 'Unknown').toUpperCase()}
-                            </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Gallery Section */}
+            <motion.div variants={item} className="space-y-4">
+              <h2 className="text-xl font-bold font-display flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-primary" />
+                Gallery
+              </h2>
+              <Card className="border-border/50">
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {allImages.length > 0 ? (
+                      allImages.slice(0, 4).map((img, i) => (
+                        <div key={i} className="aspect-square rounded-lg overflow-hidden bg-muted relative group">
+                          <img 
+                            src={'imageData' in img ? img.imageData : img.fileUrl || ''} 
+                            alt="Gallery item"
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span className="text-white text-xs font-medium px-2 py-1 bg-primary/80 rounded-full capitalize">
+                              {'type' in img ? img.type : 'uploaded'}
+                            </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                            doc.processingStatus === 'completed' 
-                              ? 'bg-green-500/10 text-green-600 border-green-500/20' 
-                              : doc.processingStatus === 'processing'
-                              ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
-                              : 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20'
-                          }`}>
-                            {doc.processingStatus}
-                          </span>
-                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-2 py-12 text-center text-muted-foreground text-sm">
+                        No images found in your gallery.
                       </div>
-                    ))}
+                    )}
                   </div>
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <p>No documents found.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Documents and KG Lists */}
+            <div className="space-y-8">
+              <motion.div variants={item} className="space-y-4">
+                <h2 className="text-xl font-bold font-display flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" />
+                  Uploaded PDFs
+                </h2>
+                <Card className="border-border/50">
+                  <CardContent className="p-0">
+                    <div className="divide-y divide-border/50">
+                      {pdfs.length > 0 ? (
+                        pdfs.slice(0, 3).map((doc) => (
+                          <div key={doc.id} className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <FileText className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm font-medium truncate max-w-[200px]">{doc.title}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(doc.createdAt!).toLocaleDateString()}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-8 text-center text-muted-foreground text-sm">
+                          No PDFs uploaded.
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              <motion.div variants={item} className="space-y-4">
+                <h2 className="text-xl font-bold font-display flex items-center gap-2">
+                  <Network className="w-5 h-5 text-primary" />
+                  Knowledge Graphs
+                </h2>
+                <Card className="border-border/50">
+                  <CardContent className="p-0">
+                    <div className="divide-y divide-border/50">
+                      {documents?.filter(d => d.processingStatus === 'completed').length ? (
+                        documents.filter(d => d.processingStatus === 'completed').slice(0, 3).map((doc) => (
+                          <div key={doc.id} className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <Network className="w-4 h-4 text-primary" />
+                              <span className="text-sm font-medium truncate max-w-[200px]">{doc.title} Graph</span>
+                            </div>
+                            <Activity className="w-4 h-4 text-green-500" />
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-8 text-center text-muted-foreground text-sm">
+                          No knowledge graphs generated yet.
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+          </div>
         </motion.div>
       </div>
     </div>

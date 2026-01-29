@@ -7,7 +7,9 @@ import {
   Image as ImageIcon, 
   LogOut,
   Menu,
-  LayoutGrid
+  LayoutGrid,
+  Clock,
+  User
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -16,12 +18,13 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const NAV_ITEMS = [
-  { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-  { label: "Chat QA", icon: MessageSquare, href: "/chat" },
-  { label: "Documents", icon: FileText, href: "/documents" },
-  { label: "Knowledge Graph", icon: Network, href: "/kg" },
+  { label: "Chat", icon: MessageSquare, href: "/chat" },
+  { label: "PDF Studio", icon: FileText, href: "/pdf-studio" },
   { label: "Image Studio", icon: ImageIcon, href: "/images" },
-  { label: "Gallery", icon: LayoutGrid, href: "/gallery" },
+  { label: "Knowledge Graph", icon: Network, href: "/kg" },
+  { label: "Text To Image", icon: LayoutGrid, href: "/text-to-image" },
+  { label: "History", icon: Clock, href: "/history" },
+  { label: "My Account", icon: User, href: "/profile" },
 ];
 
 export function AppSidebar() {
