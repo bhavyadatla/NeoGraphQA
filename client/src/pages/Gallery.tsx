@@ -65,14 +65,25 @@ export default function Gallery() {
   };
 
   const handleDownloadDocument = async (doc: any) => {
-    if (doc.fileUrl) {
+    try {
+      const response = await fetch(`/api/documents/${doc.id}/download`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Download failed');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = `/api/images/${doc.id}`;
+      link.href = url;
       link.download = doc.title;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
       toast({ title: "File downloaded" });
+    } catch (error) {
+      toast({ title: "Download failed", variant: "destructive" });
     }
   };
 

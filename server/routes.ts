@@ -170,6 +170,30 @@ export async function registerRoutes(
     res.sendFile(path.resolve(doc.fileUrl));
   });
 
+  // Download any document file
+  app.get("/api/documents/:id/download", isAuthenticated, async (req: any, res) => {
+    const doc = await storage.getDocument(Number(req.params.id));
+    if (!doc) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+    if (doc.userId !== req.user.claims.sub) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (!doc.fileUrl || !fs.existsSync(doc.fileUrl)) {
+      return res.status(404).json({ message: "File not available" });
+    }
+    
+    // Set appropriate content type
+    let contentType = "application/octet-stream";
+    if (doc.fileType === "pdf") contentType = "application/pdf";
+    else if (doc.fileType === "image") contentType = "image/png";
+    else if (doc.fileType === "txt") contentType = "text/plain";
+    
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `attachment; filename="${doc.title}"`);
+    res.sendFile(path.resolve(doc.fileUrl));
+  });
+
   app.post(api.documents.process.path, isAuthenticated, async (req: any, res) => {
     const docId = Number(req.params.id);
     const doc = await storage.getDocument(docId);
