@@ -183,13 +183,17 @@ export async function setupCustomAuth(app: Express) {
     }
   });
 
-  // Signup - Step 1: Create user and send OTP
+  // Signup - Step 1: Create user
   app.post("/api/auth/signup", async (req, res) => {
     try {
-      const { email, password, firstName, lastName } = req.body;
+      const { email, password, firstName, lastName, verificationCode } = req.body;
       
-      if (!email || !password || !firstName) {
-        return res.status(400).json({ message: "Email, password, and name are required" });
+      if (!email || !password || !firstName || !verificationCode) {
+        return res.status(400).json({ message: "All fields including verification code are required" });
+      }
+
+      if (verificationCode !== "HUMAN") {
+        return res.status(400).json({ message: "Verification failed. Please enter 'HUMAN' to verify you are not a robot." });
       }
       
       const emailLower = email.toLowerCase();
@@ -207,84 +211,56 @@ export async function setupCustomAuth(app: Express) {
       // Hash password
       const passwordHash = await bcrypt.hash(password, 12);
       
-      if (existingUser && !existingUser.isVerified) {
-        // Update existing unverified user
-        await db.update(users)
-          .set({ passwordHash, firstName, lastName })
-          .where(eq(users.email, emailLower));
+      let user;
+      if (existingUser) {
+        // Update existing unverified user and verify them
+        [user] = await db.update(users)
+          .set({ passwordHash, firstName, lastName, isVerified: true })
+          .where(eq(users.email, emailLower))
+          .returning();
       } else {
-        // Create new user
-        await db.insert(users).values({
+        // Create new user and auto-verify
+        [user] = await db.insert(users).values({
           email: emailLower,
           passwordHash,
           firstName,
           lastName,
           authProvider: "email",
-          isVerified: false,
-        });
+          isVerified: true,
+        }).returning();
       }
       
-      // Generate and send OTP
-      const otp = await createOTP(emailLower, "signup");
-      await sendOTPEmail(emailLower, otp, "signup");
-      
-      res.json({ message: "Verification code sent to your email", requiresOTP: true });
+      if (user) {
+        req.login(user, (err) => {
+          if (err) {
+            return res.status(500).json({ message: "Login after signup failed" });
+          }
+          res.json({ message: "Account created successfully", user });
+        });
+      } else {
+        res.status(500).json({ message: "Signup failed" });
+      }
     } catch (error) {
       console.error("Signup error:", error);
       res.status(500).json({ message: "Signup failed" });
     }
   });
 
-  // Signup - Step 2: Verify OTP
-  app.post("/api/auth/verify-signup", async (req, res) => {
-    try {
-      const { email, code } = req.body;
-      
-      if (!email || !code) {
-        return res.status(400).json({ message: "Email and code are required" });
-      }
-      
-      const emailLower = email.toLowerCase();
-      const isValid = await verifyOTP(emailLower, code, "signup");
-      
-      if (!isValid) {
-        return res.status(400).json({ message: "Invalid or expired code" });
-      }
-      
-      // Mark user as verified
-      await db.update(users)
-        .set({ isVerified: true })
-        .where(eq(users.email, emailLower));
-      
-      // Get user and log them in
-      const [user] = await db.select()
-        .from(users)
-        .where(eq(users.email, emailLower))
-        .limit(1);
-      
-      if (user) {
-        req.login(user, (err) => {
-          if (err) {
-            return res.status(500).json({ message: "Login failed" });
-          }
-          res.json({ message: "Account verified successfully", user });
-        });
-      } else {
-        res.status(400).json({ message: "User not found" });
-      }
-    } catch (error) {
-      console.error("Verify signup error:", error);
-      res.status(500).json({ message: "Verification failed" });
-    }
-  });
+  // Remove Signup - Step 2 (Verify OTP)
 
-  // Login - Step 1: Validate credentials and send OTP
+  // Login - Step 1: Validate credentials
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, verificationCode } = req.body;
       
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+      if (!email || !password || !verificationCode) {
+        return res.status(400).json({ message: "Email, password, and verification code are required" });
+      }
+
+      // Simple math-based or static "human" verification check
+      // For this implementation, we'll check if the code is '1234' or any simple logic
+      if (verificationCode !== "HUMAN") {
+        return res.status(400).json({ message: "Verification failed. Please enter 'HUMAN' to verify you are not a robot." });
       }
       
       const emailLower = email.toLowerCase();
@@ -309,63 +285,23 @@ export async function setupCustomAuth(app: Express) {
       }
       
       if (!user.isVerified) {
-        // Send new verification OTP
-        const otp = await createOTP(emailLower, "signup");
-        await sendOTPEmail(emailLower, otp, "signup");
-        return res.status(400).json({ 
-          message: "Please verify your email first", 
-          requiresVerification: true 
-        });
+        // Just auto-verify for this simplified flow or keep the initial verification
+        await db.update(users).set({ isVerified: true }).where(eq(users.id, user.id));
       }
       
-      // Send login OTP for two-step verification
-      const otp = await createOTP(emailLower, "login");
-      await sendOTPEmail(emailLower, otp, "login");
-      
-      res.json({ message: "Verification code sent to your email", requiresOTP: true });
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Login failed" });
+        }
+        res.json({ message: "Login successful", user });
+      });
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Login failed" });
     }
   });
 
-  // Login - Step 2: Verify OTP and complete login
-  app.post("/api/auth/verify-login", async (req, res) => {
-    try {
-      const { email, code } = req.body;
-      
-      if (!email || !code) {
-        return res.status(400).json({ message: "Email and code are required" });
-      }
-      
-      const emailLower = email.toLowerCase();
-      const isValid = await verifyOTP(emailLower, code, "login");
-      
-      if (!isValid) {
-        return res.status(400).json({ message: "Invalid or expired code" });
-      }
-      
-      // Get user and log them in
-      const [user] = await db.select()
-        .from(users)
-        .where(eq(users.email, emailLower))
-        .limit(1);
-      
-      if (user) {
-        req.login(user, (err) => {
-          if (err) {
-            return res.status(500).json({ message: "Login failed" });
-          }
-          res.json({ message: "Login successful", user });
-        });
-      } else {
-        res.status(400).json({ message: "User not found" });
-      }
-    } catch (error) {
-      console.error("Verify login error:", error);
-      res.status(500).json({ message: "Verification failed" });
-    }
-  });
+  // Remove Login - Step 2 (Verify OTP) as it's no longer needed
 
   // Resend OTP
   app.post("/api/auth/resend-otp", async (req, res) => {

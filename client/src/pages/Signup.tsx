@@ -23,6 +23,8 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [otp, setOtp] = useState("");
 
+  const [verificationCode, setVerificationCode] = useState("");
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -51,16 +53,18 @@ export default function Signup() {
         email, 
         password, 
         firstName, 
-        lastName 
+        lastName,
+        verificationCode
       });
       const data = await response.json();
 
-      if (data.requiresOTP) {
-        setStep("otp");
+      if (data.user) {
+        await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
         toast({
-          title: "Verification code sent",
-          description: "Please check your email for the verification code.",
+          title: "Account created!",
+          description: "Welcome to NeoGraphQA.",
         });
+        setLocation("/dashboard");
       }
     } catch (error: any) {
       toast({
@@ -235,6 +239,22 @@ export default function Signup() {
                         className="pl-10"
                         required
                         data-testid="input-confirm-password"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="verificationCode">Human Verification</Label>
+                    <div className="relative">
+                      <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="verificationCode"
+                        type="text"
+                        placeholder="Type 'HUMAN' to verify"
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value)}
+                        className="pl-10"
+                        required
+                        data-testid="input-verification-code"
                       />
                     </div>
                   </div>
