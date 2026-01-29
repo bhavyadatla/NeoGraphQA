@@ -33,6 +33,8 @@ if (!fs.existsSync("uploads")) {
   fs.mkdirSync("uploads");
 }
 
+import { registerChatRoutes } from "./replit_integrations/chat";
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -45,7 +47,10 @@ export async function registerRoutes(
   // 2. Register Image Generation Routes
   registerImageRoutes(app);
 
-  // 3. Document Routes
+  // 3. Register Chat Routes
+  registerChatRoutes(app);
+
+  // 4. Document Routes
   app.post(api.documents.upload.path, isAuthenticated, upload.single("file"), async (req: any, res) => {
     try {
       if (!req.file) return res.status(400).json({ message: "No file uploaded" });
@@ -308,91 +313,8 @@ export async function registerRoutes(
   });
 
   // 4. Smart Chat Route - Uses session-based chat history from frontend
-  app.post(api.chat.query.path, isAuthenticated, async (req: any, res) => {
-    try {
-      const { message, mode, documentId, imageBase64, chatHistory } = req.body;
-
-      // Use chat history from frontend (session storage)
-      const historyMessages = (chatHistory || []).map((msg: any) => ({
-        role: msg.role as "user" | "assistant",
-        content: msg.content
-      }));
-
-      // Retrieval Logic
-      let context = "";
-      let reasoning = "Direct answer generation with conversation context.";
-
-      // Handle Image Analysis mode
-      if (mode === "image" && imageBase64) {
-        reasoning = "Analyzing uploaded image using vision model.";
-        
-        const aiResponse = await openai.chat.completions.create({
-          model: "gpt-4o",
-          messages: [
-            { role: "system", content: "You are an expert image analyst. Describe images in detail. Remember previous conversation context." },
-            ...historyMessages.slice(0, -1), // Include history except current message
-            { 
-              role: "user", 
-              content: [
-                { type: "text", text: message },
-                { type: "image_url", image_url: { url: `data:image/jpeg;base64,${imageBase64}` } }
-              ]
-            }
-          ]
-        });
-
-        const answer = aiResponse.choices[0].message.content || "I couldn't analyze the image.";
-
-        return res.json({
-          response: answer,
-          confidence: 0.92,
-          reasoning,
-          source: "Image Analysis"
-        });
-      }
-
-      if (documentId) {
-        const doc = await storage.getDocument(documentId);
-        if (doc) {
-          if (mode === "kg") {
-            const kg = await storage.getKgByDocId(documentId);
-            context = `Knowledge Graph Nodes: ${kg.nodes.map(n => n.label).join(", ")}. Edges: ${kg.edges.map(e => `${e.sourceId}->${e.relation}->${e.targetId}`).join(", ")}.`;
-            reasoning = "Using Knowledge Graph entities with conversation context.";
-          } else {
-            context = `Document Content: ${doc.content.substring(0, 5000)}...`;
-            reasoning = "Using Document text content with conversation context.";
-          }
-        }
-      }
-
-      // Build system message with context
-      const systemMessage = context 
-        ? `You are NeoGraphQA, a helpful AI assistant. You have access to the following context: ${context}. Remember and reference previous messages in this conversation.`
-        : `You are NeoGraphQA, a helpful AI assistant. Remember and reference previous messages in this conversation to provide coherent, contextual responses.`;
-
-      // Generate Answer with full conversation history
-      const aiResponse = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: systemMessage },
-          ...historyMessages
-        ]
-      });
-
-      const answer = aiResponse.choices[0].message.content || "I couldn't generate an answer.";
-
-      res.json({
-        response: answer,
-        confidence: 0.95,
-        reasoning,
-        source: documentId ? "Document " + documentId : "General Knowledge"
-      });
-
-    } catch (error) {
-      console.error("Chat error:", error);
-      res.status(500).json({ message: "Internal Error" });
-    }
-  });
+  // (Note: registerChatRoutes in server/replit_integrations/chat/routes.ts handles persistent chat)
+  // We can keep this for compatibility or move logic there.
 
   return httpServer;
 }

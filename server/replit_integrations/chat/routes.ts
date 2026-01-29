@@ -29,10 +29,10 @@ export function registerChatRoutes(app: Express): void {
         return res.status(404).json({ error: "Conversation not found" });
       }
       const messages = await chatStorage.getMessagesByConversation(id);
-      res.json({ ...conversation, messages });
+      return res.json({ ...conversation, messages });
     } catch (error) {
       console.error("Error fetching conversation:", error);
-      res.status(500).json({ error: "Failed to fetch conversation" });
+      return res.status(500).json({ error: "Failed to fetch conversation" });
     }
   });
 
@@ -44,10 +44,10 @@ export function registerChatRoutes(app: Express): void {
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       
       const conversation = await chatStorage.createConversation(userId, title || "New Chat");
-      res.status(201).json(conversation);
+      return res.status(201).json(conversation);
     } catch (error) {
       console.error("Error creating conversation:", error);
-      res.status(500).json({ error: "Failed to create conversation" });
+      return res.status(500).json({ error: "Failed to create conversation" });
     }
   });
 
