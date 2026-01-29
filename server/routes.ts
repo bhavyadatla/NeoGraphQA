@@ -11,6 +11,9 @@ import { registerAuthRoutes, setupAuth, isAuthenticated } from "./replit_integra
 import { registerImageRoutes } from "./replit_integrations/image";
 import { chatStorage } from "./replit_integrations/chat/storage"; // Reuse DB storage
 import { openai } from "./replit_integrations/image/client"; // Reuse OpenAI client from image module (same key)
+import { db } from "./db";
+import { documents } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 // PDF parsing using CommonJS require (pdf-parse doesn't support ESM)
 import { createRequire } from "module";

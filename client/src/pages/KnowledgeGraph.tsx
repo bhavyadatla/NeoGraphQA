@@ -340,7 +340,7 @@ export default function KnowledgeGraph() {
                       {importantNodes.map((node, idx) => (
                         <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-border/50">
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: `${node.color}20`, color: node.color }}>
+                            <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: `${node.color || '#3b82f6'}20`, color: node.color || '#3b82f6' }}>
                               {idx + 1}
                             </div>
                             <span className="text-sm font-medium truncate max-w-[100px]">{node.label}</span>
