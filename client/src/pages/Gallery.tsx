@@ -14,11 +14,13 @@ import {
   Loader2,
   Sparkles,
   LayoutGrid,
-  Calendar
+  Calendar,
+  FileCode
 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import type { Document } from "@shared/schema";
 
 type GeneratedImage = {
   id: number;
@@ -56,7 +58,7 @@ export default function Gallery() {
 
   const handleDownload = (image: GeneratedImage) => {
     const link = document.createElement('a');
-    link.href = `data:image/png;base64,${image.imageData}`;
+    link.href = image.imageData.startsWith('data:') ? image.imageData : `data:image/png;base64,${image.imageData}`;
     link.download = `generated-image-${image.id}.png`;
     document.body.appendChild(link);
     link.click();
@@ -64,7 +66,7 @@ export default function Gallery() {
     toast({ title: "Image downloaded" });
   };
 
-  const handleDownloadDocument = async (doc: any) => {
+  const handleDownloadDocument = async (doc: Document) => {
     try {
       const response = await fetch(`/api/documents/${doc.id}/download`, {
         credentials: 'include'
@@ -88,7 +90,8 @@ export default function Gallery() {
   };
 
   const uploadedImages = documents?.filter(d => d.fileType === 'image') || [];
-  const uploadedDocs = documents?.filter(d => d.fileType !== 'image') || [];
+  const pdfDocs = documents?.filter(d => d.fileType === 'pdf') || [];
+  const otherDocs = documents?.filter(d => d.fileType !== 'image' && d.fileType !== 'pdf') || [];
 
   return (
     <div className="flex h-screen bg-background">
@@ -107,18 +110,22 @@ export default function Gallery() {
         <div className="flex-1 overflow-hidden flex">
           <div className="flex-1 p-6 overflow-auto">
             <Tabs defaultValue="generated" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 max-w-[500px] mb-6">
+              <TabsList className="grid w-full grid-cols-4 max-w-[600px] mb-6">
                 <TabsTrigger value="generated" className="gap-2">
                   <Sparkles className="w-4 h-4" />
-                  Generated ({generatedImages?.length || 0})
+                  AI Generated ({generatedImages?.length || 0})
                 </TabsTrigger>
                 <TabsTrigger value="uploaded" className="gap-2">
                   <ImageIcon className="w-4 h-4" />
-                  Uploaded ({uploadedImages.length})
+                  Images ({uploadedImages.length})
                 </TabsTrigger>
-                <TabsTrigger value="documents" className="gap-2">
+                <TabsTrigger value="pdfs" className="gap-2">
                   <FileText className="w-4 h-4" />
-                  Docs ({uploadedDocs.length})
+                  PDFs ({pdfDocs.length})
+                </TabsTrigger>
+                <TabsTrigger value="others" className="gap-2">
+                  <FileCode className="w-4 h-4" />
+                  Others ({otherDocs.length})
                 </TabsTrigger>
               </TabsList>
 
@@ -140,7 +147,7 @@ export default function Gallery() {
                       >
                         <CardContent className="p-0 aspect-square relative">
                           <img 
-                            src={`data:image/png;base64,${image.imageData}`} 
+                            src={image.imageData.startsWith('data:') ? image.imageData : `data:image/png;base64,${image.imageData}`} 
                             alt={image.prompt}
                             className="w-full h-full object-cover"
                           />
@@ -205,7 +212,7 @@ export default function Gallery() {
                               size="icon" 
                               variant="secondary" 
                               className="h-8 w-8"
-                              onClick={() => handleDownloadDocument(doc)}
+                              onClick={(e) => { e.stopPropagation(); handleDownloadDocument(doc); }}
                             >
                               <Download className="w-4 h-4" />
                             </Button>
@@ -223,22 +230,22 @@ export default function Gallery() {
                 )}
               </TabsContent>
 
-              <TabsContent value="documents">
+              <TabsContent value="pdfs">
                 {docsLoading ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
                   </div>
-                ) : uploadedDocs.length > 0 ? (
+                ) : pdfDocs.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {uploadedDocs.map((doc) => (
+                    {pdfDocs.map((doc) => (
                       <Card key={doc.id} className="overflow-hidden group hover:ring-2 hover:ring-primary/50 transition-all">
                         <CardContent className="p-4 flex items-start gap-4">
-                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                            <FileText className="w-6 h-6 text-primary" />
+                          <div className="w-12 h-12 rounded-lg bg-red-100 dark:bg-red-900/20 flex items-center justify-center shrink-0">
+                            <FileText className="w-6 h-6 text-red-600" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">{doc.title}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{doc.fileType}</p>
+                            <p className="text-xs text-muted-foreground uppercase">{doc.fileType}</p>
                             <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                               <Calendar className="w-3 h-3" />
                               {new Date(doc.createdAt!).toLocaleDateString()}
@@ -259,8 +266,50 @@ export default function Gallery() {
                 ) : (
                   <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                     <FileText className="w-12 h-12 mb-4 opacity-20" />
-                    <p className="text-lg font-medium">No documents yet</p>
-                    <p className="text-sm">Upload documents from the Documents page</p>
+                    <p className="text-lg font-medium">No PDFs found</p>
+                    <p className="text-sm">Upload PDF files from the Documents page</p>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="others">
+                {docsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                ) : otherDocs.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {otherDocs.map((doc) => (
+                      <Card key={doc.id} className="overflow-hidden group hover:ring-2 hover:ring-primary/50 transition-all">
+                        <CardContent className="p-4 flex items-start gap-4">
+                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <FileCode className="w-6 h-6 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{doc.title}</p>
+                            <p className="text-xs text-muted-foreground uppercase">{doc.fileType}</p>
+                            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                              <Calendar className="w-3 h-3" />
+                              {new Date(doc.createdAt!).toLocaleDateString()}
+                            </div>
+                          </div>
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-8 w-8 shrink-0"
+                            onClick={() => handleDownloadDocument(doc)}
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                    <FileCode className="w-12 h-12 mb-4 opacity-20" />
+                    <p className="text-lg font-medium">No other files found</p>
+                    <p className="text-sm">Upload other file types from the Documents page</p>
                   </div>
                 )}
               </TabsContent>
@@ -272,7 +321,7 @@ export default function Gallery() {
               <div className="space-y-6">
                 <div className="aspect-square rounded-xl overflow-hidden border border-border">
                   <img 
-                    src={`data:image/png;base64,${selectedImage.imageData}`} 
+                    src={selectedImage.imageData.startsWith('data:') ? selectedImage.imageData : `data:image/png;base64,${selectedImage.imageData}`} 
                     alt={selectedImage.prompt}
                     className="w-full h-full object-cover"
                   />
