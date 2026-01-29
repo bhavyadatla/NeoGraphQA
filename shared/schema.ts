@@ -20,8 +20,9 @@ export const documents = pgTable("documents", {
   fileUrl: text("file_url"),
   fileType: text("file_type").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-  summary: text("summary"),
-  processingStatus: text("processing_status").default("pending"),
+  summary: text("summary"), // Abstractive summary
+  extractiveSummary: text("extractive_summary"), // Extractive summary
+  processingStatus: text("processing_status").default("pending"), // pending, processing, completed, failed
 });
 
 // === KNOWLEDGE GRAPH ===

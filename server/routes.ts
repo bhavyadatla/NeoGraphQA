@@ -96,12 +96,16 @@ export async function registerRoutes(
             const summaryResponse = await openai.chat.completions.create({
               model: "gpt-4o",
               messages: [
-                { role: "system", content: "Summarize the following text concisely." },
+                { role: "system", content: "You are an expert summarizer. Generate both an abstractive summary (natural language) and an extractive summary (key bullet points). Format your response as JSON: { abstractive: string, extractive: string }." },
                 { role: "user", content: content.substring(0, 10000) }
-              ]
+              ],
+              response_format: { type: "json_object" }
             });
-            const summary = summaryResponse.choices[0].message.content || "No summary generated.";
-            await storage.updateDocumentSummary(doc.id, summary);
+            const summaries = JSON.parse(summaryResponse.choices[0].message.content || "{}");
+            await storage.updateDocumentSummary(doc.id, summaries.abstractive || "No summary generated.");
+            if (summaries.extractive) {
+              await db.update(documents).set({ extractiveSummary: summaries.extractive }).where(eq(documents.id, doc.id));
+            }
 
             // 2. Build Knowledge Graph
             const kgResponse = await openai.chat.completions.create({
@@ -187,7 +191,7 @@ export async function registerRoutes(
     if (!doc) {
       return res.status(404).json({ message: "Document not found" });
     }
-    if (doc.userId !== req.user.claims.sub) {
+    if (doc.userId !== (req.user as any).id) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     if (!doc.fileUrl || !fs.existsSync(doc.fileUrl)) {
@@ -295,7 +299,7 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Document not found" });
       }
       
-      if (doc.userId !== req.user.claims.sub) {
+      if (doc.userId !== (req.user as any).id) {
         return res.status(401).json({ message: "Unauthorized" });
       }
       

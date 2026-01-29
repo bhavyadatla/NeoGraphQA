@@ -11,6 +11,7 @@ import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import Dashboard from "@/pages/Dashboard";
 import Chat from "@/pages/Chat";
+import PDFStudio from "@/pages/PDFStudio";
 import Documents from "@/pages/Documents";
 import KnowledgeGraph from "@/pages/KnowledgeGraph";
 import ImageAnalysis from "@/pages/ImageAnalysis";
@@ -71,6 +72,10 @@ function Router() {
       
       <Route path="/chat/:id">
         <ProtectedRoute component={Chat} />
+      </Route>
+      
+      <Route path="/pdf-studio">
+        <ProtectedRoute component={PDFStudio} />
       </Route>
       
       <Route path="/documents">

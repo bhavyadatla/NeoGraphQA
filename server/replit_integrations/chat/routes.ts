@@ -127,10 +127,10 @@ export function registerChatRoutes(app: Express): void {
       let fullResponse = "";
 
       for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || "";
-        if (content) {
-          fullResponse += content;
-          res.write(`data: ${JSON.stringify({ content })}\n\n`);
+        const delta = (chunk.choices[0]?.delta as any)?.content || "";
+        if (delta) {
+          fullResponse += delta;
+          res.write(`data: ${JSON.stringify({ content: delta })}\n\n`);
         }
       }
 
