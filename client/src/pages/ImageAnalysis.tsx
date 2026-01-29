@@ -46,9 +46,35 @@ export default function ImageAnalysis() {
             imageBase64: base64
           })
         });
+
         if (res.ok) {
-          const data = await res.json();
-          setAnalysisResult(data.response);
+          const reader = res.body?.getReader();
+          const decoder = new TextDecoder();
+          let fullResponse = "";
+
+          if (reader) {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              
+              const chunk = decoder.decode(value, { stream: true });
+              const lines = chunk.split('\n');
+              
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const data = JSON.parse(line.slice(6));
+                    if (data.content) {
+                      fullResponse += data.content;
+                      setAnalysisResult(fullResponse);
+                    }
+                  } catch (e) {
+                    console.error("Error parsing SSE chunk", e);
+                  }
+                }
+              }
+            }
+          }
         } else {
           setAnalysisResult("Failed to analyze image. Please try again.");
         }
