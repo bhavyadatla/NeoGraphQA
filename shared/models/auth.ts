@@ -22,8 +22,7 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   isVerified: boolean("is_verified").default(false),
-  authProvider: varchar("auth_provider").default("email"), // email, google
-  googleId: varchar("google_id").unique(),
+  authProvider: varchar("auth_provider").default("email"), // email
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

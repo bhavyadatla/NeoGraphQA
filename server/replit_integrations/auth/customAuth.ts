@@ -151,7 +151,7 @@ export async function setupCustomAuth(app: Express) {
         }
         
         if (!user.passwordHash) {
-          return done(null, false, { message: "Please use Google to sign in" });
+          return done(null, false, { message: "Invalid email or password" });
         }
         
         const isValid = await bcrypt.compare(password, user.passwordHash);
@@ -300,7 +300,7 @@ export async function setupCustomAuth(app: Express) {
       }
       
       if (!user.passwordHash) {
-        return res.status(400).json({ message: "Please use Google to sign in" });
+        return res.status(400).json({ message: "Invalid email or password" });
       }
       
       const isValid = await bcrypt.compare(password, user.passwordHash);
